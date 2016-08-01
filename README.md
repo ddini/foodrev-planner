@@ -1,1 +1,5 @@
-# FoodRev-Planner
+# foodrev-planner
+
+### Launching the server
+
+### Sending requests
