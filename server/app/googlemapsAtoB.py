@@ -14,9 +14,10 @@ import googlemaps as gm
 from datetime import datetime
 
 class GoogleMapsAtoB:
-    def __init__(self, src, dst, api_key=API_KEY, date=datetime.now):
+    def __init__(self, src, dst, api_key, mode='driving', date=datetime.now()):
         self.client = gm.Client(api_key)
-        self.directions = self.client.directions(src, dst, date)
+        self.directions = self.client.directions(origin=src, destination=dst, \
+            mode=mode, departure_time=date)
 
     def get_distance(self):
         return float(self.directions[0]["legs"][0]["distance"]["text"].split(" ")[0])
