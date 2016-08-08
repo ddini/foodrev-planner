@@ -32,3 +32,18 @@ An example JSON document describing a coordination task:
           "supply_init":[["loc2", 200]],
           "demand_init":[["loc3", 200]]
         }
+
+The response from the planning server for the above would is:
+
+        {
+            'plan_status': 'success', 
+            'plan_steps': [
+                    '1: DRIVE CHARLIE CAR1 LOC1 LOC2', 
+                    '2: LOAD CAR1 LOC2', 
+                    '3: DRIVE CHARLIE CAR1 LOC2 LOC3', 
+                    '4: UNLOAD CAR1 LOC3', 
+                    '5: DRIVE CHARLIE CAR1 LOC3 LOC2', 
+                    '6: LOAD CAR1 LOC2', 
+                    '7: DRIVE CHARLIE CAR1 LOC2 LOC3', 
+                    '8: UNLOAD CAR1 LOC3']
+        }
