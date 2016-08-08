@@ -19,3 +19,16 @@ A request to the planning server is issued in the form of a JSON document, as th
 e.g.
 
         curl -X PUT -H "Content-Type: application/json" -d <quoted json document string> http://<server address>:<port number>/plan
+
+An example JSON document describing a coordination task:
+
+        {
+          "persons":["Alice", "Bob", "Charlie"],
+          "locations":["loc1", "loc2", "loc3"],
+          "cars":["car1", "car2"],
+          "at_persons":[["Alice","loc1"], ["Bob", "loc1"], ["Charlie", "loc1"]],
+          "at_cars":[["car1", "loc1"], ["car2", "loc2"]],
+          "car_capacities":[["car1", 100], ["car2", 100]],
+          "supply_init":[["loc2", 200]],
+          "demand_init":[["loc3", 200]]
+        }
