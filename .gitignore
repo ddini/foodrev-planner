@@ -2,3 +2,5 @@
 .DS_Store
 test.sh
 .cache
+.ipynb_checkpoints
+*.ipynb
