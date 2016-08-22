@@ -12,7 +12,7 @@ class CostList:
         self.addresses = addresses
         self.api_key = api_key
 
-    def cost_list(self):
+    def get_cost_list(self):
         # Ideally, we want the itertools.permutation function instead since
         # itertools.combinations assumes the time between point A and point B is
         # symmetric (that is, the time from A to B is the same as B to A).
