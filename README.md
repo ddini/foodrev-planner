@@ -1,6 +1,6 @@
 # foodrev-planner
 
-###     1       Launching the server
+###     1 .      Launching the server
 
 #### Environment variables
 * 'PLANNER_EXEC_PATH': This is the (absolute) path to the FF metric planner executable.
@@ -12,7 +12,7 @@ An example of a complete invocation from the command line:
 
 This will listen by default on the port 5000 for requests.
 
-###     2       Issuing requests and receving responses
+###     2.       Issuing requests and receving responses
 
 A request to the planning server is issued in the form of a JSON document, as the payload in a PUT request to the /plan URL.
 
@@ -47,3 +47,9 @@ The response from the planning server for the above is:
                     '7: DRIVE CHARLIE CAR1 LOC2 LOC3', 
                     '8: UNLOAD CAR1 LOC3']
         }
+        
+        3. A complete session example.
+        
+            3.1.    Get a session ID
+            
+            `curl -X PUT -H "Content-Type: application/json" -d http://<server address>:<port number>/createsession`
