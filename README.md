@@ -53,3 +53,14 @@ The response from the planning server for the above is:
 #### 3.1.    Get a session ID ####
             
         `curl -X PUT -H "Content-Type: application/json" -d http://<server address>:<port number>/createsession`
+    
+    With response:
+    
+        `{session_id:<32 character alphanumeric string>}`
+
+#### 3.2.   Submit a planning problem (including session ID) ####
+
+        `curl -X PUT -H "Content-Type: application/json" -d <quoted json document string> http://<server address>:<port number>/plan`
+    
+    With response:
+    
