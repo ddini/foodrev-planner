@@ -91,4 +91,5 @@ Where json payload is:
                 "session_id":"<session id string>",
                 "plan_id":"<plan id string>"
             }
-              
+
+The server responds with a complete plan, an example of which is provided above.
