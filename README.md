@@ -63,4 +63,20 @@ With response:
             curl -X PUT -H "Content-Type: application/json" -d <quoted json document string> http://<server address>:<port number>/plan
     
 With response:
-    
+
+            {
+                "options":
+                [    
+                    {
+                        "plan_id":<32 character alphanumeric hash string>,
+                        "demands":[<location 1>:<demand as integer>, <location 2>:<demand as integer>, ...],
+                        "ending_locations":[<person 1>:<ending location string>, <person 2>:<ending location string>, ...],
+                        "num_trips":[<person 1>:<# trips taken in plan>, <person 2>:<# trips taken in plan>, ...]
+                    },
+                    ...,
+        
+                    {
+
+                    }
+                ]
+            }
