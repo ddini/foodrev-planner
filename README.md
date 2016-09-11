@@ -80,3 +80,15 @@ With response:
                     }
                 ]
             }
+
+#### 3.3.   Client chooses plan ####
+            
+            curl -X PUT -H "Content-Type: application/json" -d <quoted json document string> http://<server address>:<port number>/chooseplan
+            
+Where json payload is:
+
+            { 
+                "session_id":"<session id string>",
+                "plan_id":"<plan id string>"
+            }
+              
