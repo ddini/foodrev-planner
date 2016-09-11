@@ -48,8 +48,8 @@ The response from the planning server for the above is:
                     '8: UNLOAD CAR1 LOC3']
         }
         
-3. A complete session example.
+###     3. A complete session example.
         
-    3.1.    Get a session ID
+        #### 3.1.    Get a session ID
             
             `curl -X PUT -H "Content-Type: application/json" -d http://<server address>:<port number>/createsession`
