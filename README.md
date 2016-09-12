@@ -52,7 +52,7 @@ The response from the planning server for the above is:
         
 #### 3.1.    Get a session ID ####
             
-            curl -X PUT -H "Content-Type: application/json" -d http://<server address>:<port number>/createsession
+            curl -X PUT -H "Content-Type: application/json" http://<server address>:<port number>/session
     
 With response:
     
@@ -60,7 +60,7 @@ With response:
 
 #### 3.2.   Submit a planning problem (including session ID) ####
 
-            curl -X PUT -H "Content-Type: application/json" -d <quoted json document string> http://<server address>:<port number>/plan
+            curl -X PUT -H "Content-Type: application/json" -d <quoted json document string> http://<server address>:<port number>/planoptions
     
 With response:
 
@@ -83,7 +83,7 @@ With response:
 
 #### 3.3.   Client chooses plan ####
             
-            curl -X PUT -H "Content-Type: application/json" -d <quoted json document string> http://<server address>:<port number>/chooseplan
+            curl -X PUT -H "Content-Type: application/json" -d <quoted json document string> http://<server address>:<port number>/planselection
             
 Where json payload is:
 
