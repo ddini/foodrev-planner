@@ -30,7 +30,7 @@ class CostList:
         associated cost (in this case, time).
     """
     def to_csv(self, csv_name, delimiter='*'):
-        cost_list_to_csv = self.cost_list()
+        cost_list_to_csv = self.get_cost_list()
 
         with open(csv_name, 'wb') as csvfile:
             output = csv.writer(csvfile, delimiter=delimiter)
