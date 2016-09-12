@@ -29,7 +29,7 @@ def get_session_hash(current_time, requester_ip):
     return md5.hexdigest()
 
 
-@app.route("/createsession", methods=["PUT"])
+@app.route("/session", methods=["PUT"])
 def create_session():
     
     #Generate session hash
@@ -49,9 +49,12 @@ def create_session():
 
     return str(json_data)
 
-@app.route("/chooseplan", methods=["PUT"])
+@app.route("/planselection", methods=["PUT"])
 def choose_plan():
-    pass
+    
+    #Retrieve selection
+
+    #
 
 @app.route("/planoptions", methods=["PUT"])
 def get_plan_options():
@@ -60,6 +63,12 @@ def get_plan_options():
     session_id = data_as_dict["session_id"]
     
     option_generator = PlanOptionGenerator(data_as_dict)
+    
+    #Store options in DB
+    #-------------------
+    
+    #-------------------
+    
     response_data = option_generator.execute()
 
     return str(response_data)
