@@ -1,10 +1,13 @@
 
+import hashlib
+import datetime
+
 from app import app
 from flask import request
 
-import plan_interface
-import hashlib
-import datetime
+from plan_interface import PlannerManager
+from plan_option_generator import PlanOptionGenerator
+
 
 @app.route('/')
 @app.route('/index')
@@ -37,6 +40,11 @@ def create_session():
     session_hash = get_session_hash(current_time, requester_ip)
     #---------------------
 
+    #Store session data in DB
+    #------------------------
+
+    #------------------------
+
     json_data = {"session_id":session_hash}
 
     return str(json_data)
@@ -45,12 +53,24 @@ def create_session():
 def choose_plan():
     pass
 
+@app.route("/planoptions", methods=["PUT"])
+def get_plan_options():
+    data_as_dict = request.get_json()
+
+    session_id = data_as_dict["session_id"]
+    
+    option_generator = PlanOptionGenerator(data_as_dict)
+    response_data = option_generator.execute()
+
+    return str(response_data)
+
+
 @app.route("/plan", methods=["POST", "PUT"])
 def get_plan():
     
     data_as_dict = request.get_json()
     
-    instance = plan_interface.PlannerManager(data_as_dict)
+    instance = PlannerManager(data_as_dict)
     
     #This will hang until planner is complete. 
     response_data = instance.execute()
