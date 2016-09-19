@@ -18,8 +18,9 @@ class AtomicSentence():
     
     def __str__(self):
         return_str = "%(name)s (" % {"name":self.name}
-        for t in self.terms:
-            return_str+="%(term_name)s:%(term_type)s " % {"term_name":t.name, "term_type":t.type.upper()}
+        
+        return_str+=", ".join([str(t) for t in self.terms])
+                
         return_str+=")"
         return return_str
 
@@ -71,31 +72,41 @@ class Variable():
         self.bound_val = value
     
     def __str__(self):
-        return_str = "Variable - Name: %(name)s - Type: %(var_type)s - Value: %(b_val)s" % {"name":self.name, "var_type":self.type, "b_val":self.bound_val}
+        return_str = "%(name)s : %(var_type)s - %(b_val)s" % {"name":self.name, "var_type":self.type.upper(), "b_val":self.bound_val}
         return return_str
 
 class Action():
 
-    def __init__(self, name, terms=None):
+    def __init__(self, name, terms, preconditions, effects):
         """ 'terms' is a list of (unbound) variables """
         
         self.name = name
         self.terms = terms
 
         #List of AtomicSentence instances
-        self.preconditions = None
+        self.preconditions = preconditions
         
-        #Dictionary of two lists, each of AtomicSentence instances
-        self.effects = {"add":[], "delete":[]}
+        #Dictionary of two lists, keyed as "add" and "delete", each of AtomicSentence instances
+        self.effects = effects
     
     def bind(self, **term_bindings):
-        pass
+        
+        #Bind terms in term list
+        for t in self.terms:
+            term_name = t.name
+            if term_name in term_bindings:
+                term_val = term_bindings[term_name]
+                t.bound_val = term_val
     
     def __str__(self):
         return_str = "Action: %(name)s (" % {"name":self.name}
-        for t in self.terms:
-            return_str+="%(term_name)s:%(term_type)s " % {"term_name":t.name, "term_type":t.type.upper()}
+        # for t in self.terms:
+        #     return_str+="%(term_name)s:%(term_type)s:%(term_val)s " % {"term_name":t.name, "term_type":t.type.upper(), "term_val":t.bound_val}
+        
+        return_str+=", ".join([str(t) for t in self.terms])
         return_str+=")"
+    
+        
         return return_str
 
 class Planner():
@@ -159,29 +170,28 @@ def main():
 
     #Create every bound version of action
     #------------------
-
-    # (:action drive
-	# 	:parameters (?person ?car ?from-loc ?to-loc)
+    # (:action load
+	# 	:parameters (?car ?location)
 	# 	:precondition (and
-	# 				(person ?person)
-	# 				(at ?car ?from-loc)
-	# 				(assigned ?person ?car)
+	# 				(> (supply ?location) 0)
+	# 				(at ?car ?location)
+	# 				(location ?location)
+	# 				(car ?car)
+	# 				(not (carrying-load ?car))
 	# 			)
+
 	# 	:effect (and
-	# 			(at ?car ?to-loc)
-	# 			(not (at ?car ?from-loc))
-	# 			(increase (number-trips) 1)
-	# 			(increase (trips-taken ?person) 1)
+	# 			(decrease (supply ?location) (car-capacity ?car))
+	# 			(carrying-load ?car)
 	# 		)
-	
 	# )
 
     #Drive
-    
-    person_a = Variable("person-a", "person")
-    loc_from = Variable("from-loc", "location")
-    loc_to = Variable("to-loc", "location")
-    car_a = Variable("car-a", "car")
+    #----------------------------------------
+    person_a = Variable("person_a", "person")
+    loc_from = Variable("from_loc", "location")
+    loc_to = Variable("to_loc", "location")
+    car_a = Variable("car_a", "car")
 
     args_drive = [person_a, car_a, loc_from, loc_to]
     drive_precons = [AtomicSentence("at", [car_a, loc_from] ), AtomicSentence("assigned", [person_a, car_a])]
@@ -189,21 +199,33 @@ def main():
 
     drive_action = Action("Drive", args_drive, drive_precons, drive_effects)
     #bound_drive = get_bound_actions(drive_action, world_objects)
+    #----------------------------------------
     
-    #Load 
-    args_load = []
+    #Load
+    #---------------------------------------- 
+    car_a = Variable("car-a", "car")
+    loc_a = Variable("loc-a", "location")
+    args_load = [car_a, loc_a]
+    load_precons = [AtomicSentence("at", [car_a, loc_a]), AtomicSentence("carrying-load", [car_a], negation=True)]
+    load_effects = {"add":AtomicSentence("carrying-load", [car_a]), "delete":[]}
     load_action = Action("Load", args_load, load_precons, load_effects)
     #bound_load = get_bound_actions(load_action, world_objects)
+    #----------------------------------------
 
     #Unload
+    #----------------------------------------
     args_unload = []
     unload_action = Action("Unload", args_unload, unload_precons, unload_effects)
     #bound_unload = get_bound_actions(unload_action, world_objects)
+    #----------------------------------------
 
     #Assign
+    #----------------------------------------
     args_assign = []
     assign_action = Action("Assign", args_assign, assign_precons, assign_effects)
     #bound_assign = get_bound_actions(assign_action, world_objects)
+    #----------------------------------------
+    
     #------------------
     
     #Initial state
