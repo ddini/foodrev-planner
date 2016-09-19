@@ -16,6 +16,13 @@ class AtomicSentence():
         self.name = name
         self.terms = terms
     
+    def __str__(self):
+        return_str = "%(name)s (" % {"name":self.name}
+        for t in self.terms:
+            return_str+="%(term_name)s:%(term_type)s " % {"term_name":t.name, "term_type":t.type.upper()}
+        return_str+=")"
+        return return_str
+
     def bind(self, **bindings):
         pass
 
@@ -171,25 +178,32 @@ def main():
 
     #Drive
     
-    args_drive = [Variable("person-a", "person"), Variable("car-a", "car"), Variable("from-loc", "location"), Variable("to-loc", "location")]
-    drive_action = Action("Drive", args_drive)
-    bound_drive = get_bound_actions(drive_action, world_objects)
+    person_a = Variable("person-a", "person")
+    loc_from = Variable("from-loc", "location")
+    loc_to = Variable("to-loc", "location")
+    car_a = Variable("car-a", "car")
+
+    args_drive = [person_a, car_a, loc_from, loc_to]
+    drive_precons = [AtomicSentence("at", [car_a, loc_from] ), AtomicSentence("assigned", [person_a, car_a])]
+    drive_effects = {"add":[AtomicSentence("at", [car_a, loc_to])], "delete":[AtomicSentence("at", [car_a, loc_from])]}
+
+    drive_action = Action("Drive", args_drive, drive_precons, drive_effects)
+    #bound_drive = get_bound_actions(drive_action, world_objects)
     
     #Load 
     args_load = []
-    load_action = Action("Load", args_load)
-    bound_load = get_bound_actions(load_action, world_objects)
+    load_action = Action("Load", args_load, load_precons, load_effects)
+    #bound_load = get_bound_actions(load_action, world_objects)
 
     #Unload
     args_unload = []
-    unload_action = Action("Unload", args_unload)
-    bound_unload = get_bound_actions(unload_action, world_objects)
+    unload_action = Action("Unload", args_unload, unload_precons, unload_effects)
+    #bound_unload = get_bound_actions(unload_action, world_objects)
 
     #Assign
     args_assign = []
-    assign_action = Action("Assign", args_assign)
-    bound_assign = get_bound_actions(assign_action, world_objects)
-
+    assign_action = Action("Assign", args_assign, assign_precons, assign_effects)
+    #bound_assign = get_bound_actions(assign_action, world_objects)
     #------------------
     
     #Initial state
