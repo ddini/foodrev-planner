@@ -30,7 +30,7 @@ class AtomicSentence():
 class State():
 
     def __init__(self, value):
-        self.num_array = value
+        self.value = value
         self.prev_state = None
         self.prev_action = None
     
@@ -46,24 +46,10 @@ class State():
         return acc_list
     
     def h(self):
-
-        num_violations = 0
-
-        min_val = min(self.num_array)
-        max_val = max(self.num_array)
-
-        mod1 = math.fabs(self.num_array[0] - min_val)
-        mod2 = math.fabs(self.num_array[-1] - max_val)
-
-        for i in range(len(self.num_array)):
-            if i<len(self.num_array)-1:
-                if self.num_array[i]>self.num_array[i+1]:
-                    num_violations+=1
-        
-        return num_violations + mod1 + mod2
+        return 0
     
     def __str__(self):
-        return "state: %s h:%s" % (str(self.num_array), str(self.h()))
+        return "state: %s h:%s" % (str(self.value), str(self.h()))
 
 class Variable():
     def __init__(self, name, var_type=None, value=None):
@@ -111,10 +97,13 @@ class Action():
 
 class Planner():
 
-    def __init__(self, actions, init_state):
+    def __init__(self, actions, world_objects, init_state, goal):
         self.state_pq = PriorityQueue()
         self.state_pq.put( (init_state.h(), init_state) )
+        
         self.actions = actions
+        self.goal = goal
+        self.w_objects = world_objects
     
     def goal_is_met(self, aState):
         
@@ -286,11 +275,17 @@ def main():
     objects = people
     objects.extend(locations)
     objects.extend(cars)
-    initial_state = people_locations
-    initial_state.extend(car_locations)
+
+    initial_state_val = people_locations
+    initial_state_val.extend(car_locations)
+
+    init_state = State(initial_state_val)
+    
     goal = None
 
-    aPlanner = Planner(actions, objects, initial_state, goal)
+    actions = [drive_action, load_action, unload_action, assign_action]
+
+    aPlanner = Planner(actions, objects, init_state, goal)
 
 if __name__ == "__main__":
     main()
