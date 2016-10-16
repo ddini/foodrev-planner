@@ -161,30 +161,6 @@ def get_bound_actions(action, world_objects):
     pass
 
 def main():
-    
-    #Initialize objects
-    #------------------
-    objects = []
-
-    #------------------
-
-    #Create every bound version of action
-    #------------------
-    # (:action load
-	# 	:parameters (?car ?location)
-	# 	:precondition (and
-	# 				(> (supply ?location) 0)
-	# 				(at ?car ?location)
-	# 				(location ?location)
-	# 				(car ?car)
-	# 				(not (carrying-load ?car))
-	# 			)
-
-	# 	:effect (and
-	# 			(decrease (supply ?location) (car-capacity ?car))
-	# 			(carrying-load ?car)
-	# 		)
-	# )
 
     #Drive
     #----------------------------------------
@@ -194,7 +170,7 @@ def main():
     car_a = Variable("car_a", "car")
 
     args_drive = [person_a, car_a, loc_from, loc_to]
-    drive_precons = [AtomicSentence("at", [car_a, loc_from] ), AtomicSentence("assigned", [person_a, car_a])]
+    drive_precons = {"positive":[AtomicSentence("at", [car_a, loc_from] ), AtomicSentence("assigned", [person_a, car_a])], "negative":[] }
     drive_effects = {"add":[AtomicSentence("at", [car_a, loc_to])], "delete":[AtomicSentence("at", [car_a, loc_from])]}
 
     drive_action = Action("Drive", args_drive, drive_precons, drive_effects)
@@ -203,26 +179,72 @@ def main():
     
     #Load
     #---------------------------------------- 
-    car_a = Variable("car-a", "car")
-    loc_a = Variable("loc-a", "location")
+    car_a = Variable("car_a", "car")
+    loc_a = Variable("loc_a", "location")
     args_load = [car_a, loc_a]
-    load_precons = [AtomicSentence("at", [car_a, loc_a]), AtomicSentence("carrying-load", [car_a], negation=True)]
-    load_effects = {"add":AtomicSentence("carrying-load", [car_a]), "delete":[]}
+    load_precons = {"positive":[AtomicSentence("at", [car_a, loc_a]), AtomicSentence("carrying-load", [car_a])], "negative":[]}
+    load_effects = {"add":[AtomicSentence("carrying-load", [car_a])], "delete":[]}
     load_action = Action("Load", args_load, load_precons, load_effects)
     #bound_load = get_bound_actions(load_action, world_objects)
     #----------------------------------------
 
+    # (:action unload
+	# 	:parameters (?car ?location)
+	# 	:precondition (and
+	# 				(> (demand ?location) 0)
+	# 				(carrying-load ?car)
+	# 				(location ?location)
+	# 				(car ?car)
+	# 				(at ?car ?location)
+	# 			)
+	# 	:effect (and
+	# 			(decrease (demand ?location) (car-capacity ?car))		
+	# 			(not (carrying-load ?car))
+	# 		)
+	# )
+
     #Unload
     #----------------------------------------
-    args_unload = []
+    car_a = Variable("car_a", "car")
+    loc_a = Variable("loc_a", "location")
+    args_unload = [car_a, loc_a]
+    
+    unload_precons = {"positive":[AtomicSentence("carrying-load", [car_a]), AtomicSentence("at", [car_a, loc_a])], "negative":[]}
+    unload_effects = {"add":[], "delete":[AtomicSentence("carrying-load", [car_a])]}
+
     unload_action = Action("Unload", args_unload, unload_precons, unload_effects)
     #bound_unload = get_bound_actions(unload_action, world_objects)
     #----------------------------------------
 
+
+    # (:action assign-car
+	# 	:parameters (?person ?car ?location)
+	# 	:precondition (and
+	# 				(person ?person)
+	# 				(car ?car)
+	# 				(not (is-assigned ?person))
+	# 				(at ?car ?location)
+	# 				(at ?person ?location)
+	# 			)
+	# 	:effect (and
+	# 			(assigned ?person ?car)
+	# 			(is-assigned ?person)
+	# 			(not (at ?person ?location))
+	# 		)
+	# )
+
     #Assign
     #----------------------------------------
-    args_assign = []
+    car_a = Variable("car_a", "car")
+    loc_a = Variable("loc_a", "location")
+    person_a = Variable("person_a", "person")
+    
+    args_assign = [person_a, car_a, loc_a]
+    assign_precons = {"positive":[AtomicSentence("at", [car_a, loc_a]), AtomicSentence("at", [person_a, loc_a])], "negative":[AtomicSentence("is-assigned", [person_a])]} 
+    assign_effects = {"add":[AtomicSentence("assigned", [person_a, car_a]), AtomicSentence("is-assigned", [person_a])], "delete":[AtomicSentence("at", [person_a, loc_a])]}
+    
     assign_action = Action("Assign", args_assign, assign_precons, assign_effects)
+    
     #bound_assign = get_bound_actions(assign_action, world_objects)
     #----------------------------------------
     
@@ -230,13 +252,43 @@ def main():
     
     #Initial state
     #------------------
+    
+    #List of AtomicSentence instances
+    # {
+    # "persons":["Alice", "Bob", "Charlie"],
+    # "locations":["loc1", "loc2", "loc3"],
+    # "cars":["car1", "car2"],
+    # "at_persons":[["Alice","loc1"], ["Bob", "loc1"], ["Charlie", "loc1"]],
+    # "at_cars":[["car1", "loc1"], ["car2", "loc2"]],
+    # "car_capacities":[["car1", 100], ["car2", 100]],
+    # "supply_init":[["loc2", 200]],
+    # "demand_init":[["loc3", 200]]
+    # }
+
+    #Initialize objects
+    #Persons, locations, cars
+    people = [Variable("person_a", "person", "Alice"), Variable("person_b", "person", "Bob"), Variable("person_c", "person", "Charlie")]
+    locations = [Variable("location_1", "location", "Location 1"), Variable("location_2", "location", "Location 2")]
+    cars = [Variable("car_1", "car", "Alices car")]
+
+    people_locations = [AtomicSentence("at", [locations[0], people[0]]), AtomicSentence("at", [locations[1], people[1]])]
+    car_locations = [AtomicSentence("at", [locations[0], cars[0]])]
 
     #------------------
 
     #Goal
     #------------------
 
+    #Collection of AtomicSentence instances, possibly including metric statements.
+
     #------------------
+
+    objects = people
+    objects.extend(locations)
+    objects.extend(cars)
+    initial_state = people_locations
+    initial_state.extend(car_locations)
+    goal = None
 
     aPlanner = Planner(actions, objects, initial_state, goal)
 
