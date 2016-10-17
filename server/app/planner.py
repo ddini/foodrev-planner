@@ -1,3 +1,5 @@
+import itertools
+
 from copy import deepcopy
 from Queue import PriorityQueue
 import math
@@ -76,7 +78,10 @@ class Action():
         self.effects = effects
     
     def bind(self, **term_bindings):
-        
+        print "Bind: "
+        for k in term_bindings:
+            print "%s --> %s" % (k, str(term_bindings[k]))
+
         #Bind terms in term list
         for t in self.terms:
             term_name = t.name
@@ -104,6 +109,57 @@ class Planner():
         self.actions = actions
         self.goal = goal
         self.w_objects = world_objects
+
+        #Action --> [bound_action, bound_action, ...]
+        self.bound_acts_dict = {}
+    
+    def get_object_combinations(self, variable_list):
+        
+        #Produce world objects of types relevant to
+        #variable_list
+        objects_by_type = []
+        for v in variable_list:
+            var_type = v.type
+            objects_of_type = [w for w in self.w_objects if w.type==var_type]
+            objects_by_type.append(objects_of_type)
+        
+
+        #Produce all valid combinations of objects
+        element_iterator = itertools.product(*objects_by_type)
+        combos = [e for e in element_iterator]
+
+        return combos
+
+    
+    def get_bound_actions_for_unbound(self, unbound_act):
+        print "Call to get_bound_actions_for_unbound: %s" % str(unbound_act)
+
+        bound_actions = []
+
+        parameter_combinations = self.get_object_combinations(unbound_act.terms)
+
+        for c in parameter_combinations:
+            act_copy = deepcopy(unbound_act)
+            bindings_dict = {}
+            
+            for var_index in range(len(c)):
+                bound_parameter = c[var_index]
+                term_param = act_copy.terms[var_index]
+                bindings_dict[term_param.name] = bound_parameter.bound_val
+
+            act_copy.bind(**bindings_dict)
+            
+            bound_actions.append(act_copy)
+
+        return bound_actions
+
+    
+    def set_bound_actions(self):
+        print "Call to get_bound_actions"
+
+        for a in actions:
+            bound_actions = self.get_bound_actions_for_unbound(a)
+            self.bound_acts_dict[a] = bound_actions
     
     def goal_is_met(self, aState):
         
@@ -146,11 +202,7 @@ def effect_function(**args):
     """ Specified on a per domain basis """
     pass
 
-def get_bound_actions(action, world_objects):
-    pass
-
-def main():
-
+def get_test_domain():
     #Drive
     #----------------------------------------
     person_a = Variable("person_a", "person")
@@ -281,9 +333,14 @@ def main():
 
     init_state = State(initial_state_val)
     
+    actions = [drive_action, load_action, unload_action, assign_action]    
+    
     goal = None
 
-    actions = [drive_action, load_action, unload_action, assign_action]
+    return actions,objects,init_state,goal
+
+def main():
+    (actions, objects, init_state, goal) = get_test_domain()
 
     aPlanner = Planner(actions, objects, init_state, goal)
 
