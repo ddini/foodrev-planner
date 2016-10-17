@@ -205,7 +205,6 @@ class Planner():
         state_AS_list = state_node.value
         for p in positive_precons:
             if not p in state_AS_list:
-                print "Missing required positive precondition: %s" % str(p)
                 conditions_are_met = False
                 break
         #----------------------
@@ -216,13 +215,32 @@ class Planner():
 
         for n in negative_precons:
             if n in state_AS_list:
-                print "Included negative precondition: %s" % str(n)
                 conditions_are_met = False
                 break
         #----------------------
 
         return conditions_are_met
 
+    
+    def act_on(self, bound_action, state_node):
+        new_state_node = None
+
+        new_state_node = deepcopy(state_node)
+
+        add_effects = bound_action.effects["add"]
+        new_state_node.value.extend(add_effects)
+
+        delete_effects = bound_action.effects["delete"]
+
+        items_to_remove = []
+        for element in new_state_node.value:
+            if element in delete_effects:
+                items_to_remove.append(element)
+
+        for i in items_to_remove:
+            new_state_node.value.remove(i)
+        
+        return new_state_node
     
     def execute(self):
         
