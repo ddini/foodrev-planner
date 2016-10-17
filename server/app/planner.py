@@ -25,6 +25,25 @@ class AtomicSentence():
                 
         return_str+=")"
         return return_str
+    
+    def __eq__(self, other):
+        return_val = True
+        
+        #names are equal
+        if self.name != other.name:
+            return False
+
+        #same number of terms
+        if len(self.terms) != len(other.terms):
+            return False
+
+        #For each term, there exists a term in other s.t. they are equal
+        for t in self.terms:
+            if not t in other.terms:
+                return_val = False
+                break
+
+        return return_val 
 
     def bind(self, **bindings):
         pass
@@ -56,12 +75,15 @@ class State():
 class Variable():
     def __init__(self, name, var_type=None, value=None):
         self.name = name
-        self.type = var_type
+        self.type = var_type.upper()
         self.bound_val = value
     
     def __str__(self):
         return_str = "%(name)s : %(var_type)s - %(b_val)s" % {"name":self.name, "var_type":self.type.upper(), "b_val":self.bound_val}
         return return_str
+    
+    def __eq__(self, other):
+        return (self.type == other.type) and (self.bound_val == other.bound_val)
 
 class Action():
 
@@ -78,9 +100,6 @@ class Action():
         self.effects = effects
     
     def bind(self, **term_bindings):
-        print "Bind: "
-        for k in term_bindings:
-            print "%s --> %s" % (k, str(term_bindings[k]))
 
         #Bind terms in term list
         for t in self.terms:
@@ -157,7 +176,7 @@ class Planner():
     def set_bound_actions(self):
         print "Call to get_bound_actions"
 
-        for a in actions:
+        for a in self.actions:
             bound_actions = self.get_bound_actions_for_unbound(a)
             self.bound_acts_dict[a] = bound_actions
     
@@ -175,6 +194,36 @@ class Planner():
 
         return return_val
     
+    def preconditions_are_met(self, bound_action, state_node):
+        
+        conditions_are_met = True
+
+        #positive preconditions
+        #----------------------
+        positive_precons = bound_action.preconditions["positive"]
+
+        state_AS_list = state_node.value
+        for p in positive_precons:
+            if not p in state_AS_list:
+                print "Missing required positive precondition: %s" % str(p)
+                conditions_are_met = False
+                break
+        #----------------------
+        
+        #negative preconditions
+        #----------------------
+        negative_precons = bound_action.preconditions["negative"]
+
+        for n in negative_precons:
+            if n in state_AS_list:
+                print "Included negative precondition: %s" % str(n)
+                conditions_are_met = False
+                break
+        #----------------------
+
+        return conditions_are_met
+
+    
     def execute(self):
         
         current_node = self.state_pq.get()
@@ -183,12 +232,13 @@ class Planner():
         while (current_node is not None) and (not self.goal_is_met(current_node)):
             print "current node: %s" % current_node
             for a in self.actions:
-                new_state = a.act_on(current_node)
+                if self.preconditions_are_met(a, current_node):
+                    new_state = self.act_on(a, current_node)
 
-                new_state.prev_state = current_node
-                new_state.prev_action = a
+                    new_state.prev_state = current_node
+                    new_state.prev_action = a
 
-                self.state_pq.put((new_state.h(), new_state))
+                    self.state_pq.put((new_state.h(), new_state))
             
             if not self.state_pq.empty(): 
                 current_node = self.state_pq.get()
