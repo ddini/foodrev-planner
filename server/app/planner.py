@@ -122,6 +122,16 @@ class Action():
 class Planner():
 
     def __init__(self, actions, world_objects, init_state, goal):
+        """ 
+            'metrics' is an optional dictionary of metric values to keep track of and use
+            in effects, preconditions, goals, and optimization statements during
+            planning. 
+
+            They values in the above dictionary takes two forms:
+                -Global - just a named float to keep track of.
+                -Functional - A dictionary, which keeps track of values for separate world objects.
+        """
+        
         self.state_pq = PriorityQueue()
         self.state_pq.put( (init_state.h(), init_state) )
         
@@ -131,6 +141,10 @@ class Planner():
 
         #Action --> [bound_action, bound_action, ...]
         self.bound_acts_dict = {}
+        self.all_bound_actions = []
+        self.set_bound_actions()
+
+        self.metrics = deepcopy(init_state.metrics)
     
     def get_object_combinations(self, variable_list):
         
@@ -179,18 +193,12 @@ class Planner():
         for a in self.actions:
             bound_actions = self.get_bound_actions_for_unbound(a)
             self.bound_acts_dict[a] = bound_actions
+        
+        for k in self.bound_acts_dict:
+            self.all_bound_actions.extend(self.bound_acts_dict[k])
     
     def goal_is_met(self, aState):
-        
-        num_array = aState.num_array
-
-        return_val = True
-
-        for i in range(len(num_array)):
-            if i<len(num_array)-1:
-                if num_array[i]>num_array[i+1]:
-                    return_val = False
-                    break
+        return_val = False
 
         return return_val
     
@@ -249,8 +257,9 @@ class Planner():
 
         while (current_node is not None) and (not self.goal_is_met(current_node)):
             print "current node: %s" % current_node
-            for a in self.actions:
+            for a in self.all_bound_actions:
                 if self.preconditions_are_met(a, current_node):
+                    
                     new_state = self.act_on(a, current_node)
 
                     new_state.prev_state = current_node
@@ -273,6 +282,8 @@ def effect_function(**args):
 def get_test_domain():
     #Drive
     #----------------------------------------
+    world = Variable("world", "domain")
+
     person_a = Variable("person_a", "person")
     loc_from = Variable("from_loc", "location")
     loc_to = Variable("to_loc", "location")
@@ -280,7 +291,8 @@ def get_test_domain():
 
     args_drive = [person_a, car_a, loc_from, loc_to]
     drive_precons = {"positive":[AtomicSentence("at", [car_a, loc_from] ), AtomicSentence("assigned", [person_a, car_a])], "negative":[] }
-    drive_effects = {"add":[AtomicSentence("at", [car_a, loc_to])], "delete":[AtomicSentence("at", [car_a, loc_from])]}
+    drive_effects = {"add":[AtomicSentence("at", [car_a, loc_to])], "delete":[AtomicSentence("at", [car_a, loc_from])],
+                        "metric":{"number-trips":1, "trips-taken":{person_a:1} }}
 
     drive_action = Action("Drive", args_drive, drive_precons, drive_effects)
     #bound_drive = get_bound_actions(drive_action, world_objects)
@@ -288,32 +300,23 @@ def get_test_domain():
     
     #Load
     #---------------------------------------- 
+    world = Variable("world", "domain")
+    
     car_a = Variable("car_a", "car")
     loc_a = Variable("loc_a", "location")
     args_load = [car_a, loc_a]
-    load_precons = {"positive":[AtomicSentence("at", [car_a, loc_a]), AtomicSentence("carrying-load", [car_a])], "negative":[]}
-    load_effects = {"add":[AtomicSentence("carrying-load", [car_a])], "delete":[]}
+    load_precons = {"positive":[AtomicSentence("at", [car_a, loc_a]), AtomicSentence("carrying-load", [car_a])], "negative":[],
+                        "metrics":[{ "name":"supply", "key":loc_a, "operation":"gt", "value":0 }] }
+    load_effects = {"add":[AtomicSentence("carrying-load", [car_a])], "delete":[], 
+                        "metrics":[{ "name":"supply", "key":loc_a, "impact":-1*car_a.attributes["capacity"] }] }
     load_action = Action("Load", args_load, load_precons, load_effects)
     #bound_load = get_bound_actions(load_action, world_objects)
     #----------------------------------------
 
-    # (:action unload
-	# 	:parameters (?car ?location)
-	# 	:precondition (and
-	# 				(> (demand ?location) 0)
-	# 				(carrying-load ?car)
-	# 				(location ?location)
-	# 				(car ?car)
-	# 				(at ?car ?location)
-	# 			)
-	# 	:effect (and
-	# 			(decrease (demand ?location) (car-capacity ?car))		
-	# 			(not (carrying-load ?car))
-	# 		)
-	# )
-
     #Unload
     #----------------------------------------
+    world = Variable("world", "domain")
+    
     car_a = Variable("car_a", "car")
     loc_a = Variable("loc_a", "location")
     args_unload = [car_a, loc_a]
@@ -325,25 +328,10 @@ def get_test_domain():
     #bound_unload = get_bound_actions(unload_action, world_objects)
     #----------------------------------------
 
-
-    # (:action assign-car
-	# 	:parameters (?person ?car ?location)
-	# 	:precondition (and
-	# 				(person ?person)
-	# 				(car ?car)
-	# 				(not (is-assigned ?person))
-	# 				(at ?car ?location)
-	# 				(at ?person ?location)
-	# 			)
-	# 	:effect (and
-	# 			(assigned ?person ?car)
-	# 			(is-assigned ?person)
-	# 			(not (at ?person ?location))
-	# 		)
-	# )
-
     #Assign
     #----------------------------------------
+    world = Variable("world", "domain")
+    
     car_a = Variable("car_a", "car")
     loc_a = Variable("loc_a", "location")
     person_a = Variable("person_a", "person")
@@ -375,7 +363,9 @@ def get_test_domain():
     # }
 
     #Initialize objects
-    #Persons, locations, cars
+    #The World, Persons, locations, cars
+    the_world = Variable("world", "Domain", "The World")
+    
     people = [Variable("person_a", "person", "Alice"), Variable("person_b", "person", "Bob"), Variable("person_c", "person", "Charlie")]
     locations = [Variable("location_1", "location", "Location 1"), Variable("location_2", "location", "Location 2")]
     cars = [Variable("car_1", "car", "Alices car")]
@@ -383,6 +373,22 @@ def get_test_domain():
     people_locations = [AtomicSentence("at", [locations[0], people[0]]), AtomicSentence("at", [locations[1], people[1]])]
     car_locations = [AtomicSentence("at", [locations[0], cars[0]])]
 
+    # (number-trips)
+    # (supply ?location)
+    # (demand ?location)
+
+    # (trips-taken ?person)
+    # (car-capacity ?car)
+    
+    the_world.attributes["number-trips"] = 0
+
+    people[0].attributes["trips-taken"] = 0
+    people[1].attributes["trips-taken"] = 1
+    people[2].attributes["trips-taken"] = 2
+
+    locations[1].attributes["supply"] = 200
+    locations[2].attributes["demand"] = 200
+    car[0].attributes["capacity"] = 50
     #------------------
 
     #Goal
@@ -398,6 +404,7 @@ def get_test_domain():
 
     initial_state_val = people_locations
     initial_state_val.extend(car_locations)
+    initial_state_val.append(the_world)
 
     init_state = State(initial_state_val)
     
