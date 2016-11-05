@@ -73,13 +73,17 @@ class State():
         return "state: %s h:%s" % (str(self.value), str(self.h()))
 
 class Variable():
-    def __init__(self, name, var_type=None, value=None):
+    def __init__(self, name, var_type=None, value=None, attributes=None):
         self.name = name
         self.type = var_type.upper()
         self.bound_val = value
+        self.attributes = attributes
     
     def __str__(self):
         return_str = "%(name)s : %(var_type)s - %(b_val)s" % {"name":self.name, "var_type":self.type.upper(), "b_val":self.bound_val}
+        if self.attributes is not None:
+            return_str+="\n"
+            return_str+=(",".join([ str(k)+":"+str(self.attributes[k]) for k in self.attributes ]))
         return return_str
     
     def __eq__(self, other):
@@ -282,17 +286,18 @@ def effect_function(**args):
 def get_test_domain():
     #Drive
     #----------------------------------------
-    world = Variable("world", "domain")
+    world = Variable("world", "domain", attributes={"number-trips":0})
 
-    person_a = Variable("person_a", "person")
-    loc_from = Variable("from_loc", "location")
-    loc_to = Variable("to_loc", "location")
+    person_a = Variable("person_a", "person", attributes={"trips-taken":0})
+    loc_from = Variable("from_loc", "location", attributes={"supply":0, "demand":0})
+    loc_to = Variable("to_loc", "location", attributes={"supply":0, "demand":0})
     car_a = Variable("car_a", "car")
 
     args_drive = [person_a, car_a, loc_from, loc_to]
-    drive_precons = {"positive":[AtomicSentence("at", [car_a, loc_from] ), AtomicSentence("assigned", [person_a, car_a])], "negative":[] }
+    drive_precons = {"positive":[AtomicSentence("at", [car_a, loc_from] ), AtomicSentence("assigned", [person_a, car_a])], "negative":[], "metrics":[] }
     drive_effects = {"add":[AtomicSentence("at", [car_a, loc_to])], "delete":[AtomicSentence("at", [car_a, loc_from])],
-                        "metric":{"number-trips":1, "trips-taken":{person_a:1} }}
+                        "metrics":[{"object":world, "attribute":"number-trips", "impact":1}, 
+                                    {"object":person_a, "attribute":"trips-taken", "impact":1}] }
 
     drive_action = Action("Drive", args_drive, drive_precons, drive_effects)
     #bound_drive = get_bound_actions(drive_action, world_objects)
@@ -300,29 +305,54 @@ def get_test_domain():
     
     #Load
     #---------------------------------------- 
-    world = Variable("world", "domain")
+    world = Variable("world", "domain", attributes={"number-trips":0})
     
-    car_a = Variable("car_a", "car")
-    loc_a = Variable("loc_a", "location")
+    car_a = Variable("car_a", "car", attributes={"capacity":0})
+    loc_a = Variable("loc_a", "location", attributes={"supply":0, "demand":0})
     args_load = [car_a, loc_a]
     load_precons = {"positive":[AtomicSentence("at", [car_a, loc_a]), AtomicSentence("carrying-load", [car_a])], "negative":[],
-                        "metrics":[{ "name":"supply", "key":loc_a, "operation":"gt", "value":0 }] }
+                        "metrics":[
+                                {"object":loc_a, "attribute":"supply", "operation":"gt", "value":0}
+                            ] 
+                    }
     load_effects = {"add":[AtomicSentence("carrying-load", [car_a])], "delete":[], 
-                        "metrics":[{ "name":"supply", "key":loc_a, "impact":-1*car_a.attributes["capacity"] }] }
+                        "metrics":[
+                            {"object":loc_a, "attribute":"supply", "impact":-1*car_a.attributes["capacity"]}
+                            ] 
+                    }
     load_action = Action("Load", args_load, load_precons, load_effects)
     #bound_load = get_bound_actions(load_action, world_objects)
     #----------------------------------------
 
     #Unload
     #----------------------------------------
-    world = Variable("world", "domain")
+    # (:action unload
+    # :parameters (?car ?location)
+    # :precondition (and
+    #             (> (demand ?location) 0)
+    #             (carrying-load ?car)
+    #             (location ?location)
+    #             (car ?car)
+    #             (at ?car ?location)
+    #         )
+    # :effect (and
+    #         (decrease (demand ?location) (car-capacity ?car))		
+    #         (not (carrying-load ?car))
+    #     )
+	# )
     
-    car_a = Variable("car_a", "car")
-    loc_a = Variable("loc_a", "location")
+    world = Variable("world", "domain", attributes={"number-trips":0})
+    
+    car_a = Variable("car_a", "car", attributes={"capacity":0})
+    loc_a = Variable("loc_a", "location", attributes={"supply":0, "demand":0})
     args_unload = [car_a, loc_a]
     
-    unload_precons = {"positive":[AtomicSentence("carrying-load", [car_a]), AtomicSentence("at", [car_a, loc_a])], "negative":[]}
-    unload_effects = {"add":[], "delete":[AtomicSentence("carrying-load", [car_a])]}
+    unload_precons = {"positive":[AtomicSentence("carrying-load", [car_a]), AtomicSentence("at", [car_a, loc_a])], "negative":[], 
+                "metrics":[ {"object":loc_a, "attribute":"demand", "operation":"gt", "value":0} ]
+                }
+    unload_effects = {"add":[], "delete":[AtomicSentence("carrying-load", [car_a])], 
+                "metrics":[{"object":loc_a, "attribute":"demand", "impact":-1*car_a.attributes["capacity"]}
+    ]}
 
     unload_action = Action("Unload", args_unload, unload_precons, unload_effects)
     #bound_unload = get_bound_actions(unload_action, world_objects)
@@ -330,11 +360,11 @@ def get_test_domain():
 
     #Assign
     #----------------------------------------
-    world = Variable("world", "domain")
+    world = Variable("world", "domain", attributes={"number-trips":0})
     
-    car_a = Variable("car_a", "car")
-    loc_a = Variable("loc_a", "location")
-    person_a = Variable("person_a", "person")
+    car_a = Variable("car_a", "car", attributes={"capacity":0})
+    loc_a = Variable("loc_a", "location", attributes={"supply":0, "demand":0})
+    person_a = Variable("person_a", "person", attributes={"trips-taken":0})
     
     args_assign = [person_a, car_a, loc_a]
     assign_precons = {"positive":[AtomicSentence("at", [car_a, loc_a]), AtomicSentence("at", [person_a, loc_a])], "negative":[AtomicSentence("is-assigned", [person_a])]} 
@@ -364,37 +394,19 @@ def get_test_domain():
 
     #Initialize objects
     #The World, Persons, locations, cars
-    the_world = Variable("world", "Domain", "The World")
+    the_world = Variable("world", "Domain", "The World", attributes={"number-trips":0})
     
-    people = [Variable("person_a", "person", "Alice"), Variable("person_b", "person", "Bob"), Variable("person_c", "person", "Charlie")]
-    locations = [Variable("location_1", "location", "Location 1"), Variable("location_2", "location", "Location 2")]
-    cars = [Variable("car_1", "car", "Alices car")]
+    people = [Variable("person_a", "person", "Alice", attributes={"trips-taken":0}), Variable("person_b", "person", "Bob", attributes={"trips-taken":0}), Variable("person_c", "person", "Charlie", attributes={"trips-taken":0})]
+    locations = [Variable("location_1", "location", "Location 1", attributes={"supply":200, "demand":0}), Variable("location_2", "location", "Location 2", attributes={"supply":0, "demand":200})]
+    cars = [Variable("car_1", "car", "Alices car", attributes={"capacity":50})]
 
     people_locations = [AtomicSentence("at", [locations[0], people[0]]), AtomicSentence("at", [locations[1], people[1]])]
     car_locations = [AtomicSentence("at", [locations[0], cars[0]])]
 
-    # (number-trips)
-    # (supply ?location)
-    # (demand ?location)
-
-    # (trips-taken ?person)
-    # (car-capacity ?car)
-    
-    the_world.attributes["number-trips"] = 0
-
-    people[0].attributes["trips-taken"] = 0
-    people[1].attributes["trips-taken"] = 1
-    people[2].attributes["trips-taken"] = 2
-
-    locations[1].attributes["supply"] = 200
-    locations[2].attributes["demand"] = 200
-    car[0].attributes["capacity"] = 50
     #------------------
 
     #Goal
     #------------------
-
-    #Collection of AtomicSentence instances, possibly including metric statements.
 
     #------------------
 
