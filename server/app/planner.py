@@ -231,7 +231,41 @@ class Planner():
                 break
         #----------------------
 
+        #Metric preconditions
         metric_precons = bound_action.preconditions["metrics"]
+
+        # unload_precons = {"positive":[AtomicSentence("carrying-load", [car_a]), AtomicSentence("at", [car_a, loc_a])], "negative":[], 
+        #         "metrics":[ {"object":loc_a, "attribute":"demand", "operation":"gt", "value":0} ]
+        #         }
+
+        for m in metric_precons:
+            #Retrieve object
+            world_object = m["object"]
+
+            if m["attribute"] in world_object.attributes:
+                #Get value for specified attribute
+                attr_value = world_object.attributes[m["attribute"]]
+                
+                #Determine operation and test value
+                test_val = m["value"]
+
+                if m["operation"]=="gt":
+                    test_bool = attr_value > test_val
+                elif m["operation"]=="gte":
+                    test_bool = attr_value>= test_val
+                elif m["operation"]=="lt":
+                    test_bool = attr_value< test_val
+                elif m["operation"]=="lte":
+                    test_bool = attr_value<= test_val
+                else:
+                    test_bool = False
+                
+                if not test_bool:
+                    conditions_are_met = False
+                    break
+            else:
+                conditions_are_met = False
+                break
 
         return conditions_are_met
 
@@ -289,13 +323,12 @@ def get_test_domain():
     #Drive
     #----------------------------------------
     world = Variable("world", "domain", attributes={"number-trips":0})
-
     person_a = Variable("person_a", "person", attributes={"trips-taken":0})
     loc_from = Variable("from_loc", "location", attributes={"supply":0, "demand":0})
     loc_to = Variable("to_loc", "location", attributes={"supply":0, "demand":0})
     car_a = Variable("car_a", "car")
 
-    args_drive = [person_a, car_a, loc_from, loc_to]
+    args_drive = [person_a, car_a, loc_from, loc_to, world]
     drive_precons = {"positive":[AtomicSentence("at", [car_a, loc_from] ), AtomicSentence("assigned", [person_a, car_a])], "negative":[], "metrics":[] }
     drive_effects = {"add":[AtomicSentence("at", [car_a, loc_to])], "delete":[AtomicSentence("at", [car_a, loc_from])],
                         "metrics":[{"object":world, "attribute":"number-trips", "impact":1}, 
@@ -311,7 +344,7 @@ def get_test_domain():
     
     car_a = Variable("car_a", "car", attributes={"capacity":0})
     loc_a = Variable("loc_a", "location", attributes={"supply":0, "demand":0})
-    args_load = [car_a, loc_a]
+    args_load = [car_a, loc_a, world]
     load_precons = {"positive":[AtomicSentence("at", [car_a, loc_a]), AtomicSentence("carrying-load", [car_a])], "negative":[],
                         "metrics":[
                                 {"object":loc_a, "attribute":"supply", "operation":"gt", "value":0}
@@ -347,7 +380,7 @@ def get_test_domain():
     
     car_a = Variable("car_a", "car", attributes={"capacity":0})
     loc_a = Variable("loc_a", "location", attributes={"supply":0, "demand":0})
-    args_unload = [car_a, loc_a]
+    args_unload = [car_a, loc_a, world]
     
     unload_precons = {"positive":[AtomicSentence("carrying-load", [car_a]), AtomicSentence("at", [car_a, loc_a])], "negative":[], 
                 "metrics":[ {"object":loc_a, "attribute":"demand", "operation":"gt", "value":0} ]
@@ -368,7 +401,7 @@ def get_test_domain():
     loc_a = Variable("loc_a", "location", attributes={"supply":0, "demand":0})
     person_a = Variable("person_a", "person", attributes={"trips-taken":0})
     
-    args_assign = [person_a, car_a, loc_a]
+    args_assign = [person_a, car_a, loc_a, world]
     assign_precons = {"positive":[AtomicSentence("at", [car_a, loc_a]), AtomicSentence("at", [person_a, loc_a])], "negative":[AtomicSentence("is-assigned", [person_a])]} 
     assign_effects = {"add":[AtomicSentence("assigned", [person_a, car_a]), AtomicSentence("is-assigned", [person_a])], "delete":[AtomicSentence("at", [person_a, loc_a])]}
     
@@ -396,7 +429,7 @@ def get_test_domain():
 
     #Initialize objects
     #The World, Persons, locations, cars
-    the_world = Variable("world", "Domain", "The World", attributes={"number-trips":0})
+    the_world = Variable("world", "domain", "The World", attributes={"number-trips":0})
     
     people = [Variable("person_a", "person", "Alice", attributes={"trips-taken":0}), Variable("person_b", "person", "Bob", attributes={"trips-taken":0}), Variable("person_c", "person", "Charlie", attributes={"trips-taken":0})]
     locations = [Variable("location_1", "location", "Location 1", attributes={"supply":200, "demand":0}), Variable("location_2", "location", "Location 2", attributes={"supply":0, "demand":200})]
@@ -415,6 +448,7 @@ def get_test_domain():
     objects = people
     objects.extend(locations)
     objects.extend(cars)
+    objects.append(the_world)
 
     initial_state_val = people_locations
     initial_state_val.extend(car_locations)
