@@ -109,8 +109,9 @@ class Action():
         for t in self.terms:
             term_name = t.name
             if term_name in term_bindings:
-                term_val = term_bindings[term_name]
-                t.bound_val = term_val
+                bound_term = term_bindings[term_name]
+                t.bound_val = bound_term.bound_val
+                t.attributes = bound_term.attributes
     
     def __str__(self):
         return_str = "Action: %(name)s (" % {"name":self.name}
@@ -147,8 +148,6 @@ class Planner():
         self.bound_acts_dict = {}
         self.all_bound_actions = []
         self.set_bound_actions()
-
-        self.metrics = deepcopy(init_state.metrics)
     
     def get_object_combinations(self, variable_list):
         
@@ -182,7 +181,8 @@ class Planner():
             for var_index in range(len(c)):
                 bound_parameter = c[var_index]
                 term_param = act_copy.terms[var_index]
-                bindings_dict[term_param.name] = bound_parameter.bound_val
+                #bindings_dict[term_param.name] = bound_parameter.bound_val
+                bindings_dict[term_param.name] = bound_parameter
 
             act_copy.bind(**bindings_dict)
             
@@ -230,6 +230,8 @@ class Planner():
                 conditions_are_met = False
                 break
         #----------------------
+
+        metric_precons = bound_action.preconditions["metrics"]
 
         return conditions_are_met
 
