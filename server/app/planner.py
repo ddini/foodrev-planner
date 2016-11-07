@@ -218,6 +218,7 @@ class Planner():
         for p in positive_precons:
             if not p in state_AS_list:
                 conditions_are_met = False
+                print "VIOLATED due to positive precons."
                 break
         #----------------------
         
@@ -228,7 +229,9 @@ class Planner():
         for n in negative_precons:
             if n in state_AS_list:
                 conditions_are_met = False
+                print "VIOLATED due to negative precons."
                 break
+                
         #----------------------
 
         #Metric preconditions
@@ -262,6 +265,7 @@ class Planner():
                 
                 if not test_bool:
                     conditions_are_met = False
+                    print "VIOLATED due to metric precons."
                     break
             else:
                 conditions_are_met = False
@@ -402,8 +406,8 @@ def get_test_domain():
     person_a = Variable("person_a", "person", attributes={"trips-taken":0})
     
     args_assign = [person_a, car_a, loc_a, world]
-    assign_precons = {"positive":[AtomicSentence("at", [car_a, loc_a]), AtomicSentence("at", [person_a, loc_a])], "negative":[AtomicSentence("is-assigned", [person_a])]} 
-    assign_effects = {"add":[AtomicSentence("assigned", [person_a, car_a]), AtomicSentence("is-assigned", [person_a])], "delete":[AtomicSentence("at", [person_a, loc_a])]}
+    assign_precons = {"positive":[AtomicSentence("at", [car_a, loc_a]), AtomicSentence("at", [person_a, loc_a])], "negative":[AtomicSentence("is-assigned", [person_a])], "metrics":[]} 
+    assign_effects = {"add":[AtomicSentence("assigned", [person_a, car_a]), AtomicSentence("is-assigned", [person_a])], "delete":[AtomicSentence("at", [person_a, loc_a])], "metrics":[]}
     
     assign_action = Action("Assign", args_assign, assign_precons, assign_effects)
     
@@ -456,6 +460,8 @@ def get_test_domain():
 
     init_state = State(initial_state_val)
     
+
+
     actions = [drive_action, load_action, unload_action, assign_action]    
     
     goal = None
