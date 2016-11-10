@@ -54,6 +54,7 @@ class State():
         self.value = value
         self.prev_state = None
         self.prev_action = None
+        self.metrics = {}
     
     def enumerate_plan(self):
 
@@ -242,33 +243,36 @@ class Planner():
         #         }
 
         for m in metric_precons:
-            #Retrieve object
             world_object = m["object"]
 
-            if m["attribute"] in world_object.attributes:
-                #Get value for specified attribute
-                attr_value = world_object.attributes[m["attribute"]]
-                
-                #Determine operation and test value
-                test_val = m["value"]
+            #Retrieve object's current attribute value
+            #-----------------------------------------
+            object_name = world_object.bound_val
+            attr_value = state_node.metrics[object_name][m["attribute"]]
+            
+            print "object: %s" % object_name
+            print "attribute: %s value: %s" % (m["attribute"], attr_value)
+            #-----------------------------------------
+            
+            #Determine operation and test value
+            test_val = m["value"]
 
-                if m["operation"]=="gt":
-                    test_bool = attr_value > test_val
-                elif m["operation"]=="gte":
-                    test_bool = attr_value>= test_val
-                elif m["operation"]=="lt":
-                    test_bool = attr_value< test_val
-                elif m["operation"]=="lte":
-                    test_bool = attr_value<= test_val
-                else:
-                    test_bool = False
-                
-                if not test_bool:
-                    conditions_are_met = False
-                    print "VIOLATED due to metric precons."
-                    break
+            print "test value: %s" % test_val
+
+            if m["operation"]=="gt":
+                test_bool = attr_value > test_val
+            elif m["operation"]=="gte":
+                test_bool = attr_value>= test_val
+            elif m["operation"]=="lt":
+                test_bool = attr_value< test_val
+            elif m["operation"]=="lte":
+                test_bool = attr_value<= test_val
             else:
+                test_bool = False
+            
+            if not test_bool:
                 conditions_are_met = False
+                print "VIOLATED due to metric precons."
                 break
 
         return conditions_are_met
@@ -279,9 +283,14 @@ class Planner():
 
         new_state_node = deepcopy(state_node)
 
+        #Add effects
+        #------------
         add_effects = bound_action.effects["add"]
         new_state_node.value.extend(add_effects)
+        #------------
 
+        #Delete effects
+        #--------------
         delete_effects = bound_action.effects["delete"]
 
         items_to_remove = []
@@ -291,7 +300,26 @@ class Planner():
 
         for i in items_to_remove:
             new_state_node.value.remove(i)
-        
+        #--------------
+
+        #Execute metrics adjustments
+        #---------------------------
+        # {"add":[], "delete":[AtomicSentence("carrying-load", [car_a])], 
+        #         "metrics":[{"object":loc_a, "attribute":"demand", "impact":-1*car_a.attributes["capacity"]}
+
+        metric_effects = bound_action.effects["metrics"]
+
+        for m_e in metric_effects:
+            #Identify receving of impact and 
+            #type of impact
+            impacted_object = m_e["object"]
+            attribute = m_e["attribute"]
+            impact_amount = m_e["impact"]
+
+            new_state_node.metrics[impacted_object.bound_val].attributes[attribute]+=impact_amount
+
+        #---------------------------
+
         return new_state_node
     
     def execute(self):
@@ -456,11 +484,32 @@ def get_test_domain():
 
     initial_state_val = people_locations
     initial_state_val.extend(car_locations)
-    initial_state_val.append(the_world)
+    #initial_state_val.append(the_world)
 
     init_state = State(initial_state_val)
     
+    init_state.metrics[the_world.bound_val] = {}
+    init_state.metrics[the_world.bound_val]["number-trips"] = 0
 
+    init_state.metrics[people[0].bound_val] = {}
+    init_state.metrics[people[0].bound_val]["trips-taken"] = 0
+
+    init_state.metrics[people[1].bound_val] = {}
+    init_state.metrics[people[1].bound_val]["trips-taken"] = 0
+
+    init_state.metrics[people[2].bound_val] = {}
+    init_state.metrics[people[2].bound_val]["trips-taken"] = 0
+
+    init_state.metrics[locations[0].bound_val] = {}
+    init_state.metrics[locations[0].bound_val]["supply"] = 200
+    init_state.metrics[locations[0].bound_val]["demand"] = 0
+
+    init_state.metrics[locations[1].bound_val] = {}
+    init_state.metrics[locations[1].bound_val]["supply"] = 0
+    init_state.metrics[locations[1].bound_val]["demand"] = 200
+
+    init_state.metrics[cars[0].bound_val] = {}
+    init_state.metrics[cars[0].bound_val]["capacity"] = 50
 
     actions = [drive_action, load_action, unload_action, assign_action]    
     
