@@ -82,9 +82,7 @@ class Variable():
     
     def __str__(self):
         return_str = "%(name)s : %(var_type)s - %(b_val)s" % {"name":self.name, "var_type":self.type.upper(), "b_val":self.bound_val}
-        if self.attributes is not None:
-            return_str+="\n"
-            return_str+=(",".join([ str(k)+":"+str(self.attributes[k]) for k in self.attributes ]))
+        
         return return_str
     
     def __eq__(self, other):
@@ -316,7 +314,7 @@ class Planner():
             attribute = m_e["attribute"]
             impact_amount = m_e["impact"]
 
-            new_state_node.metrics[impacted_object.bound_val].attributes[attribute]+=impact_amount
+            new_state_node.metrics[impacted_object.bound_val][attribute]+=impact_amount
 
         #---------------------------
 
