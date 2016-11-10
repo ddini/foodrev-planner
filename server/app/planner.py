@@ -68,7 +68,20 @@ class State():
         return acc_list
     
     def h(self):
-        return 0
+        outstanding_demand = 0
+
+        for k in self.metrics:
+            if "demand" in self.metrics[k]:
+                outstanding_demand+=self.metrics[k]["demand"]
+        
+        outstanding_supply = 0
+
+        for k in self.metrics:
+            if "supply" in self.metrics[k]:
+                outstanding_supply+=self.metrics[k]["supply"]
+        
+        total_num_trips = self.metrics["The World"]["number-trips"]
+        return (outstanding_supply*outstanding_supply + outstanding_demand*outstanding_demand +total_num_trips*total_num_trips)
     
     def __str__(self):
         return "state: %s h:%s" % (str(self.value), str(self.h()))
@@ -217,7 +230,7 @@ class Planner():
         for p in positive_precons:
             if not p in state_AS_list:
                 conditions_are_met = False
-                print "VIOLATED due to positive precons."
+                #print "VIOLATED due to positive precons."
                 break
         #----------------------
         
@@ -228,7 +241,7 @@ class Planner():
         for n in negative_precons:
             if n in state_AS_list:
                 conditions_are_met = False
-                print "VIOLATED due to negative precons."
+                #print "VIOLATED due to negative precons."
                 break
                 
         #----------------------
@@ -248,14 +261,14 @@ class Planner():
             object_name = world_object.bound_val
             attr_value = state_node.metrics[object_name][m["attribute"]]
             
-            print "object: %s" % object_name
-            print "attribute: %s value: %s" % (m["attribute"], attr_value)
+            #print "object: %s" % object_name
+            #print "attribute: %s value: %s" % (m["attribute"], attr_value)
             #-----------------------------------------
             
             #Determine operation and test value
             test_val = m["value"]
 
-            print "test value: %s" % test_val
+            #print "test value: %s" % test_val
 
             if m["operation"]=="gt":
                 test_bool = attr_value > test_val
@@ -270,7 +283,7 @@ class Planner():
             
             if not test_bool:
                 conditions_are_met = False
-                print "VIOLATED due to metric precons."
+                #print "VIOLATED due to metric precons."
                 break
 
         return conditions_are_met
@@ -320,23 +333,48 @@ class Planner():
 
         return new_state_node
     
+    def step(self, current_node):
+        #print "current node: %s" % current_node
+        
+        for a in self.all_bound_actions:
+            if self.preconditions_are_met(a, current_node):
+                new_state = self.act_on(a, current_node)
+
+                new_state.prev_state = current_node
+                new_state.prev_action = a
+
+                self.state_pq.put((new_state.h(), new_state))        
+    
+    def execute_iterate(self, num_iterations=10):
+        current_node = self.state_pq.get()
+        current_node = current_node[1]
+
+        i = 0
+        while (current_node is not None) and (i<num_iterations):
+            
+            if i%100 == 0:
+                print "iteration #: %s" % i
+            
+            self.step(current_node)
+
+            if not self.state_pq.empty(): 
+                current_node = self.state_pq.get()
+                current_node = current_node[1]
+            else:
+                current_node = None
+            
+            i+=1
+
+        return current_node
+    
     def execute(self):
         
         current_node = self.state_pq.get()
         current_node = current_node[1]
 
         while (current_node is not None) and (not self.goal_is_met(current_node)):
-            print "current node: %s" % current_node
-            for a in self.all_bound_actions:
-                if self.preconditions_are_met(a, current_node):
-                    
-                    new_state = self.act_on(a, current_node)
+            self.step(current_node)
 
-                    new_state.prev_state = current_node
-                    new_state.prev_action = a
-
-                    self.state_pq.put((new_state.h(), new_state))
-            
             if not self.state_pq.empty(): 
                 current_node = self.state_pq.get()
                 current_node = current_node[1]
@@ -375,7 +413,7 @@ def get_test_domain():
     car_a = Variable("car_a", "car", attributes={"capacity":0})
     loc_a = Variable("loc_a", "location", attributes={"supply":0, "demand":0})
     args_load = [car_a, loc_a, world]
-    load_precons = {"positive":[AtomicSentence("at", [car_a, loc_a]), AtomicSentence("carrying-load", [car_a])], "negative":[],
+    load_precons = {"positive":[AtomicSentence("at", [car_a, loc_a])], "negative":[AtomicSentence("carrying-load", [car_a])],
                         "metrics":[
                                 {"object":loc_a, "attribute":"supply", "operation":"gt", "value":0}
                             ] 
@@ -425,8 +463,14 @@ def get_test_domain():
 
     #Assign
     #----------------------------------------
-    world = Variable("world", "domain", attributes={"number-trips":0})
+    # :effect (and
+	# 			(assigned ?person ?car)
+	# 			(is-assigned ?person)
+	# 			(not (at ?person ?location))
+	# 		)
     
+    world = Variable("world", "domain", attributes={"number-trips":0})
+
     car_a = Variable("car_a", "car", attributes={"capacity":0})
     loc_a = Variable("loc_a", "location", attributes={"supply":0, "demand":0})
     person_a = Variable("person_a", "person", attributes={"trips-taken":0})
