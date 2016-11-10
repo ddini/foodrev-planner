@@ -320,12 +320,16 @@ class Planner():
 
         metric_effects = bound_action.effects["metrics"]
 
+        #print "Executing metric effects."
+
         for m_e in metric_effects:
             #Identify receving of impact and 
             #type of impact
             impacted_object = m_e["object"]
             attribute = m_e["attribute"]
             impact_amount = m_e["impact"]
+
+            #print "object: %s attribute: %s amount: %s" % (impacted_object.bound_val, attribute, impact_amount)
 
             new_state_node.metrics[impacted_object.bound_val][attribute]+=impact_amount
 
@@ -410,7 +414,7 @@ def get_test_domain():
     #---------------------------------------- 
     world = Variable("world", "domain", attributes={"number-trips":0})
     
-    car_a = Variable("car_a", "car", attributes={"capacity":0})
+    car_a = Variable("car_a", "car", attributes={"capacity":50})
     loc_a = Variable("loc_a", "location", attributes={"supply":0, "demand":0})
     args_load = [car_a, loc_a, world]
     load_precons = {"positive":[AtomicSentence("at", [car_a, loc_a])], "negative":[AtomicSentence("carrying-load", [car_a])],
@@ -446,7 +450,7 @@ def get_test_domain():
     
     world = Variable("world", "domain", attributes={"number-trips":0})
     
-    car_a = Variable("car_a", "car", attributes={"capacity":0})
+    car_a = Variable("car_a", "car", attributes={"capacity":50})
     loc_a = Variable("loc_a", "location", attributes={"supply":0, "demand":0})
     args_unload = [car_a, loc_a, world]
     
