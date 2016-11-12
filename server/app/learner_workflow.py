@@ -14,11 +14,21 @@ def workflow():
     (actions, objects, init_state, goal) = problem_parser.parse_dict(complete_problem_dict)
     frPlanner = Planner(actions, objects, init_state, goal)
     
-    frPlanner.find_plans(q_hat)
+    plans = frPlanner.execute(plans_to_find=100)
 
-    #From above plans, select k, sampling from space determined
-    #by features, f1, f2, f3, f4.
-    sampled_plans = frPlanner.sample_plans(num_plans=4)
+    #Resolve plans into features
+    plans_by_feature = [(features,plan_id) for p in plans]
+
+    #Choose k-plans by epsilon-greedy policy
+    #---------------------------------------
+    scored_plans = [(q_hat(p), p) for p in plans_by_feature]
+
+    #Sort plans_by_feature by q_hat
+    scored_plans.sort(reverse=True)
+
+    #Take top k-1 and one random one
+    sampled_plans = []
+    #---------------------------------------
 
     #Present k plans to human operator for scoring.
     return sampled_plans
