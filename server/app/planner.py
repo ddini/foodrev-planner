@@ -510,7 +510,8 @@ def get_test_domain():
     the_world = Variable("world", "domain", "The World", attributes={"number-trips":0})
     
     people = [Variable("person_a", "person", "Alice", attributes={"trips-taken":0}), Variable("person_b", "person", "Bob", attributes={"trips-taken":0}), Variable("person_c", "person", "Charlie", attributes={"trips-taken":0})]
-    locations = [Variable("location_1", "location", "Location 1", attributes={"supply":200, "demand":0}), Variable("location_2", "location", "Location 2", attributes={"supply":0, "demand":200})]
+    locations = [Variable("location_1", "location", "Location 1", attributes={"supply":400, "demand":0}), Variable("location_2", "location", "Location 2", attributes={"supply":0, "demand":200}), Variable("location_3", "location", "Location 3", attributes={"supply":0, "demand":200})]
+    
     cars = [Variable("car_1", "car", "Alices car", attributes={"capacity":50})]
 
     people_locations = [AtomicSentence("at", [locations[0], people[0]]), AtomicSentence("at", [locations[1], people[1]])]
@@ -553,6 +554,10 @@ def get_test_domain():
     init_state.metrics[locations[1].bound_val] = {}
     init_state.metrics[locations[1].bound_val]["supply"] = 0
     init_state.metrics[locations[1].bound_val]["demand"] = 200
+
+    init_state.metrics[locations[2].bound_val] = {}
+    init_state.metrics[locations[2].bound_val]["supply"] = 0
+    init_state.metrics[locations[2].bound_val]["demand"] = 200
 
     init_state.metrics[cars[0].bound_val] = {}
     init_state.metrics[cars[0].bound_val]["capacity"] = 50
