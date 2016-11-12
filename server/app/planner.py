@@ -3,6 +3,7 @@ import itertools
 from copy import deepcopy
 from Queue import PriorityQueue
 import math
+import random
 
 class WorldObject():
     def __init__(self, name, object_type=None):
@@ -216,6 +217,15 @@ class Planner():
     def goal_is_met(self, aState):
         return_val = False
 
+        outstanding_demand = 0
+
+        for k in aState.metrics:
+            if "demand" in aState.metrics[k]:
+                outstanding_demand+=aState.metrics[k]["demand"]
+        
+        if outstanding_demand==0:
+            return_val = True
+
         return return_val
     
     def preconditions_are_met(self, bound_action, state_node):
@@ -371,12 +381,26 @@ class Planner():
 
         return current_node
     
-    def execute(self):
+    def execute(self, plans_to_find=3, sample=None):
         
+        plans = []
+
         current_node = self.state_pq.get()
         current_node = current_node[1]
 
-        while (current_node is not None) and (not self.goal_is_met(current_node)):
+        i = 0
+        while (current_node is not None):
+            if i%100 == 0:
+                print "iteration #: %s" % i
+                print "Current metrics: %s" % current_node.metrics
+            
+            if self.goal_is_met(current_node):
+                print "Found plan #: %s" % len(plans)
+                plans.append(current_node)
+            
+            if len(plans)>=plans_to_find:
+                break
+
             self.step(current_node)
 
             if not self.state_pq.empty(): 
@@ -384,8 +408,17 @@ class Planner():
                 current_node = current_node[1]
             else:
                 current_node = None
+            
+            i+=1
 
-        return current_node
+        return_plans = None
+
+        if sample:
+            return_plans = [random.choice(plans) for x in range(sample)]
+        else:
+            return_plans = plans
+
+        return return_plans
 
 def effect_function(**args):
     """ Specified on a per domain basis """
@@ -553,11 +586,11 @@ def get_test_domain():
 
     init_state.metrics[locations[1].bound_val] = {}
     init_state.metrics[locations[1].bound_val]["supply"] = 0
-    init_state.metrics[locations[1].bound_val]["demand"] = 200
+    init_state.metrics[locations[1].bound_val]["demand"] = 100
 
     init_state.metrics[locations[2].bound_val] = {}
     init_state.metrics[locations[2].bound_val]["supply"] = 0
-    init_state.metrics[locations[2].bound_val]["demand"] = 200
+    init_state.metrics[locations[2].bound_val]["demand"] = 100
 
     init_state.metrics[cars[0].bound_val] = {}
     init_state.metrics[cars[0].bound_val]["capacity"] = 50
