@@ -534,7 +534,7 @@ def get_test_domain():
     #The World, Persons, locations, cars
     the_world = Variable("world", "domain", "The World", attributes={"number-trips":0})
     
-    people = [Variable("person_a", "person", "Alice", attributes={"trips-taken":0}), Variable("person_b", "person", "Bob", attributes={"trips-taken":0}), Variable("person_c", "person", "Charlie", attributes={"trips-taken":0})]
+    people = [Variable("person_a", "person", "Alice", attributes={"trips-taken":0, "home":"Alice home"}), Variable("person_b", "person", "Bob", attributes={"trips-taken":0, "home":"Bob home"}), Variable("person_c", "person", "Charlie", attributes={"trips-taken":0, "home":"Charlie home"})]
     locations = [Variable("location_1", "location", "Location 1", attributes={"supply":400, "demand":0}), Variable("location_2", "location", "Location 2", attributes={"supply":0, "demand":200}), Variable("location_3", "location", "Location 3", attributes={"supply":0, "demand":200})]
     
     cars = [Variable("car_1", "car", "Alices car", attributes={"capacity":50})]
