@@ -70,11 +70,35 @@ def extract_features_from_plan(aPlan):
 
     #Sum of distances between final location and home location
     #---------------------------------------------------------
+    
     #final location of each car
+    car_to_loc = {}
+    for atom_sent in aPlan.value:
+        if atom_sent.name=="at":
+            car_terms = [t for t in atom_sent.terms if t.type=="CAR"]
+            loc_terms = [t for t in atom_sent.terms if t.type=="LOCATION"]
+            
+            if len(car_terms)>0:
+                car_term = car_terms[0]
+                loc_term = loc_terms[0]
+                car_to_loc[car_term.bound_val] = loc_term.bound_val
 
     #Who is in each car
-    
+    person_to_car = {}
+    for atom_sent in aPlan.value:
+        if atom_sent.name=="assigned":
+            person_terms = [t for t in atom_sent.terms if t.type=="PERSON"]
+            car_terms = [t for t in atom_sent.terms if t.type=="CAR"]
+
+            if len(person_terms)>0:
+                person_term = person_terms[0]
+                car_term = car_terms[0]
+                person_to_car[person_term.bound_val] = car_term.bound_val
+
     #final location of each person
+    person_to_loc = {}
+    for p in person_to_car:
+        person_to_loc[p] = car_to_loc[person_to_car[p]]
 
     #home location of each person
 
