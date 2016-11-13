@@ -1,4 +1,6 @@
 
+import math
+
 import planner
 import problem_parser
 
@@ -33,6 +35,64 @@ def workflow():
     #Present k plans to human operator for scoring.
     return sampled_plans
 
+
+def extract_features_from_plan(aPlan):
+
+    feature_vector = []
+
+    #Total number trips
+    f1 = aPlan.metrics["The World"]["number-trips"]
+
+    #Trip entropy measure
+    #--------------------
+    person_trips = []
+
+    #Collect number of trips per person
+    for k in aPlan.metrics:
+        if "trips-taken" in aPlan.metrics[k]:
+            trips_for_person = aPlan.metrics[k]["trips-taken"]
+            person_trips.append(trips_for_person)
+    
+    #Nomralize values as if probability distribution
+    total_trips = float(f1)
+    noralized_per_person_trips = [float(v)/total_trips for v in person_trips]
+
+    #Evaluate entropy
+    entropy_acc = 0
+    for v in noralized_per_person_trips:
+        if v!=0:
+            entropy_acc+=-1*v*math.log(v,2)
+        else:
+            entropy_acc+=0
+
+    f2 = entropy_acc
+    #--------------------
+
+    #Sum of distances between final location and home location
+    #---------------------------------------------------------
+    #final location of each car
+
+    #Who is in each car
+    
+    #final location of each person
+
+    #home location of each person
+
+    #Find difference in locations
+
+    f3 = None
+    #---------------------------------------------------------
+
+    #(Final loc - Home loc) distance entropy measure
+    #-----------------------------------------------
+    
+    
+    f4 = None 
+    #-----------------------------------------------
+
+    feature_vector = (f1, f2, f3, f4)
+
+    return feature_vector
 
 def select_problem_completion(problem_dict):
     pass

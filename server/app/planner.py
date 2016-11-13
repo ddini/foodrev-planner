@@ -304,12 +304,6 @@ class Planner():
 
         new_state_node = deepcopy(state_node)
 
-        #Add effects
-        #------------
-        add_effects = bound_action.effects["add"]
-        new_state_node.value.extend(add_effects)
-        #------------
-
         #Delete effects
         #--------------
         delete_effects = bound_action.effects["delete"]
@@ -323,14 +317,15 @@ class Planner():
             new_state_node.value.remove(i)
         #--------------
 
+        #Add effects
+        #------------
+        add_effects = bound_action.effects["add"]
+        new_state_node.value.extend(add_effects)
+        #------------
+
         #Execute metrics adjustments
         #---------------------------
-        # {"add":[], "delete":[AtomicSentence("carrying-load", [car_a])], 
-        #         "metrics":[{"object":loc_a, "attribute":"demand", "impact":-1*car_a.attributes["capacity"]}
-
         metric_effects = bound_action.effects["metrics"]
-
-        #print "Executing metric effects."
 
         for m_e in metric_effects:
             #Identify receving of impact and 
@@ -339,8 +334,6 @@ class Planner():
             attribute = m_e["attribute"]
             impact_amount = m_e["impact"]
 
-            #print "object: %s attribute: %s amount: %s" % (impacted_object.bound_val, attribute, impact_amount)
-
             new_state_node.metrics[impacted_object.bound_val][attribute]+=impact_amount
 
         #---------------------------
@@ -348,7 +341,6 @@ class Planner():
         return new_state_node
     
     def step(self, current_node):
-        #print "current node: %s" % current_node
         
         for a in self.all_bound_actions:
             if self.preconditions_are_met(a, current_node):
