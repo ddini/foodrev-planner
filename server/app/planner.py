@@ -4,6 +4,9 @@ from copy import deepcopy
 from Queue import PriorityQueue
 import math
 import random
+import logging
+
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 
 class WorldObject():
     def __init__(self, name, object_type=None):
@@ -181,7 +184,7 @@ class Planner():
 
     
     def get_bound_actions_for_unbound(self, unbound_act):
-        print "Call to get_bound_actions_for_unbound: %s" % str(unbound_act)
+        logging.info("Call to get_bound_actions_for_unbound: %s", str(unbound_act) )
 
         bound_actions = []
 
@@ -205,7 +208,7 @@ class Planner():
 
     
     def set_bound_actions(self):
-        print "Call to get_bound_actions"
+        logging.info("Call to get_bound_actions")
 
         for a in self.actions:
             bound_actions = self.get_bound_actions_for_unbound(a)
@@ -359,7 +362,7 @@ class Planner():
         while (current_node is not None) and (i<num_iterations):
             
             if i%100 == 0:
-                print "iteration #: %s" % i
+                logging.info("iteration #: %s", i)
             
             self.step(current_node)
 
@@ -383,11 +386,11 @@ class Planner():
         i = 0
         while (current_node is not None):
             if i%100 == 0:
-                print "iteration #: %s" % i
-                print "Current metrics: %s" % current_node.metrics
+                logging.info("iteration #: %s", i)
+                logging.info("Current metrics: %s", current_node.metrics)
             
             if self.goal_is_met(current_node):
-                print "Found plan #: %s" % len(plans)
+                logging.info("Found plan #: %s",len(plans) )
                 plans.append(current_node)
             
             if len(plans)>=plans_to_find:
