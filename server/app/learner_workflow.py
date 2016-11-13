@@ -1,8 +1,11 @@
 
 import math
+import logging
 
 import planner
 import problem_parser
+
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 
 #Workflow
 def workflow():
@@ -36,14 +39,14 @@ def workflow():
     return sampled_plans
 
 
-def extract_features_from_plan(aPlan):
+def extract_features_from_plan(aPlan, world_objects):
 
     feature_vector = []
 
-    #Total number trips
+    #Feature 1: Total number trips
     f1 = aPlan.metrics["The World"]["number-trips"]
 
-    #Trip entropy measure
+    #Feature 2: Trip entropy measure
     #--------------------
     person_trips = []
 
@@ -68,7 +71,7 @@ def extract_features_from_plan(aPlan):
     f2 = entropy_acc
     #--------------------
 
-    #Sum of distances between final location and home location
+    #Feature 3: Sum of distances between final location and home location
     #---------------------------------------------------------
     
     #final location of each car
@@ -100,23 +103,51 @@ def extract_features_from_plan(aPlan):
     for p in person_to_car:
         person_to_loc[p] = car_to_loc[person_to_car[p]]
 
+    person_to_home_loc = {}
     #home location of each person
+    for obj in world_objects:
+        if obj.type=="PERSON":
+            home_location = obj.attributes["home"]
+            person_to_home_loc[obj.bound_val] = home_location
 
     #Find difference in locations
+    terminus_home_diffs = []
+    
+    for p in person_to_loc:
+        dist_diff = get_distance(person_to_loc[p], person_to_home_loc[p])
+        terminus_home_diffs.append(dist_diff)
 
-    f3 = None
+    f3 = reduce(lambda x,y:x+y, terminus_home_diffs)
     #---------------------------------------------------------
 
-    #(Final loc - Home loc) distance entropy measure
+    #Feature 4: (Final loc - Home loc) distance entropy measure
     #-----------------------------------------------
-    
-    
-    f4 = None 
+    #Nomralize values as if probability distribution
+    total_diffs = float(f3)
+    if total_diffs == 0:
+        f4 =  0
+    else:
+        noralized_per_person_diffs = [float(v)/total_diffs for v in terminus_home_diffs]
+
+        #Evaluate entropy
+        entropy_acc = 0
+        for v in noralized_per_person_diffs:
+            if v!=0:
+                entropy_acc+=-1*v*math.log(v,2)
+            else:
+                entropy_acc+=0
+
+        f4 = entropy_acc
     #-----------------------------------------------
 
     feature_vector = (f1, f2, f3, f4)
 
     return feature_vector
+
+def get_distance(loc_a_str, loc_b_str):
+    logging.info("get_distance: %s, %s" % (loc_a_str, loc_b_str))
+
+    return 0
 
 def select_problem_completion(problem_dict):
     pass
