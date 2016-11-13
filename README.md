@@ -33,7 +33,7 @@ An example JSON document describing a coordination task:
           "demand_init":[["loc3", 200]]
         }
 
-The response from the planning server for the above is:
+A valid response from the planning server for the above is:
 
         {
             'plan_status': 'success', 
