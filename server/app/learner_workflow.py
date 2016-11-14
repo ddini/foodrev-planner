@@ -5,7 +5,10 @@ import logging
 import planner
 import problem_parser
 
+import googlemapsAtoB
+
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
+
 
 #Workflow
 def workflow():
@@ -147,7 +150,11 @@ def extract_features_from_plan(aPlan, world_objects):
 def get_distance(loc_a_str, loc_b_str):
     logging.info("get_distance: %s, %s" % (loc_a_str, loc_b_str))
 
-    return 0
+    dist_api = googlemapsAtoB.GoogleMapsAtoB(loc_a_str, loc_b_str, "AIzaSyANdUjfLpgjP5tkDXR2TLSiD3NHNjuBRPU")
+
+    time_to_travel = dist_api.get_time()
+
+    return time_to_travel
 
 def select_problem_completion(problem_dict):
     pass

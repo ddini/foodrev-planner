@@ -537,8 +537,17 @@ def get_test_domain():
     #The World, Persons, locations, cars
     the_world = Variable("world", "domain", "The World", attributes={"number-trips":0})
     
-    people = [Variable("person_a", "person", "Alice", attributes={"trips-taken":0, "home":"Alice home"}), Variable("person_b", "person", "Bob", attributes={"trips-taken":0, "home":"Bob home"}), Variable("person_c", "person", "Charlie", attributes={"trips-taken":0, "home":"Charlie home"})]
-    locations = [Variable("location_1", "location", "Location 1", attributes={"supply":400, "demand":0}), Variable("location_2", "location", "Location 2", attributes={"supply":0, "demand":200}), Variable("location_3", "location", "Location 3", attributes={"supply":0, "demand":200})]
+
+    loc_1_str = "970 Crane St., Menlo Park, CA 94025"
+    loc_2_str = "260 Homer Ave., Palo Alto, CA"
+    loc_3_str = "2215 Broadway, Redwood City, CA 94063"
+
+    person_1_home = "298 W McKinley Ave, Sunnyvale, CA 94086"
+    person_2_home = "260 Homer Ave., Palo Alto, CA"
+    person_3_home = "28 W 25th Ave., San Mateo, CA 94403"
+
+    people = [Variable("person_a", "person", "Alice", attributes={"trips-taken":0, "home":person_1_home}), Variable("person_b", "person", "Bob", attributes={"trips-taken":0, "home":person_2_home}), Variable("person_c", "person", "Charlie", attributes={"trips-taken":0, "home":person_3_home})]
+    locations = [Variable("location_1", "location", loc_1_str, attributes={"supply":400, "demand":0}), Variable("location_2", "location", loc_2_str, attributes={"supply":0, "demand":200}), Variable("location_3", "location", loc_3_str, attributes={"supply":0, "demand":200})]
     
     cars = [Variable("car_1", "car", "Alices car", attributes={"capacity":50})]
 
