@@ -343,16 +343,29 @@ class Planner():
 
         return new_state_node
     
-    def step(self, current_node):
+    def step(self, current_node, sample=10):
         
-        for a in self.all_bound_actions:
-            if self.preconditions_are_met(a, current_node):
+        valid_actions = [a for a in self.all_bound_actions if self.preconditions_are_met(a, current_node)]
+        
+        if sample is not None:
+            #logging.info("Sampling action space.")
+            sampled_actions = [random.choice(valid_actions) for x in range(sample)]
+            for s_a in sampled_actions:
+                new_state = self.act_on(s_a, current_node)
+
+                new_state.prev_state = current_node
+                new_state.prev_action = s_a
+
+                self.state_pq.put((new_state.h(), new_state))
+        else:
+            for a in valid_actions:
                 new_state = self.act_on(a, current_node)
 
                 new_state.prev_state = current_node
                 new_state.prev_action = a
 
-                self.state_pq.put((new_state.h(), new_state))        
+                self.state_pq.put((new_state.h(), new_state))
+                        
     
     def execute_iterate(self, num_iterations=10):
         current_node = self.state_pq.get()
@@ -388,6 +401,7 @@ class Planner():
             if i%100 == 0:
                 logging.info("iteration #: %s", i)
                 logging.info("Current metrics: %s", current_node.metrics)
+                logging.info("queue size: %s" % self.state_pq.qsize())
             
             if self.goal_is_met(current_node):
                 logging.info("Found plan #: %s",len(plans) )
@@ -442,7 +456,7 @@ def get_test_domain():
     #---------------------------------------- 
     world = Variable("world", "domain", attributes={"number-trips":0})
     
-    car_a = Variable("car_a", "car", attributes={"capacity":50})
+    car_a = Variable("car_a", "car", attributes={"capacity":200})
     loc_a = Variable("loc_a", "location", attributes={"supply":0, "demand":0})
     args_load = [car_a, loc_a, world]
     load_precons = {"positive":[AtomicSentence("at", [car_a, loc_a])], "negative":[AtomicSentence("carrying-load", [car_a])],
@@ -478,7 +492,7 @@ def get_test_domain():
     
     world = Variable("world", "domain", attributes={"number-trips":0})
     
-    car_a = Variable("car_a", "car", attributes={"capacity":50})
+    car_a = Variable("car_a", "car", attributes={"capacity":200})
     loc_a = Variable("loc_a", "location", attributes={"supply":0, "demand":0})
     args_unload = [car_a, loc_a, world]
     
@@ -492,18 +506,10 @@ def get_test_domain():
     unload_action = Action("Unload", args_unload, unload_precons, unload_effects)
     #bound_unload = get_bound_actions(unload_action, world_objects)
     #----------------------------------------
-
-    #Assign
-    #----------------------------------------
-    # :effect (and
-	# 			(assigned ?person ?car)
-	# 			(is-assigned ?person)
-	# 			(not (at ?person ?location))
-	# 		)
     
     world = Variable("world", "domain", attributes={"number-trips":0})
 
-    car_a = Variable("car_a", "car", attributes={"capacity":0})
+    car_a = Variable("car_a", "car", attributes={"capacity":200})
     loc_a = Variable("loc_a", "location", attributes={"supply":0, "demand":0})
     person_a = Variable("person_a", "person", attributes={"trips-taken":0})
     
@@ -520,39 +526,58 @@ def get_test_domain():
     
     #Initial state
     #------------------
-    
-    #List of AtomicSentence instances
-    # {
-    # "persons":["Alice", "Bob", "Charlie"],
-    # "locations":["loc1", "loc2", "loc3"],
-    # "cars":["car1", "car2"],
-    # "at_persons":[["Alice","loc1"], ["Bob", "loc1"], ["Charlie", "loc1"]],
-    # "at_cars":[["car1", "loc1"], ["car2", "loc2"]],
-    # "car_capacities":[["car1", 100], ["car2", 100]],
-    # "supply_init":[["loc2", 200]],
-    # "demand_init":[["loc3", 200]]
-    # }
 
     #Initialize objects
     #The World, Persons, locations, cars
     the_world = Variable("world", "domain", "The World", attributes={"number-trips":0})
     
 
-    loc_1_str = "970 Crane St., Menlo Park, CA 94025"
-    loc_2_str = "260 Homer Ave., Palo Alto, CA"
-    loc_3_str = "2215 Broadway, Redwood City, CA 94063"
+    source_loc_1 = "1919 22nd Street, San Francisco, CA 94107"
+    source_loc_2 = "mission st and cesar chavez st., San Francisco, CA 94110"
 
-    person_1_home = "298 W McKinley Ave, Sunnyvale, CA 94086"
-    person_2_home = "260 Homer Ave., Palo Alto, CA"
-    person_3_home = "28 W 25th Ave., San Mateo, CA 94403"
+    dest_loc_1 = "65 9th Street, San Francisco, CA"
+    dest_loc_2 = "668 Clay St, San Francisco, CA"
 
-    people = [Variable("person_a", "person", "Alice", attributes={"trips-taken":0, "home":person_1_home}), Variable("person_b", "person", "Bob", attributes={"trips-taken":0, "home":person_2_home}), Variable("person_c", "person", "Charlie", attributes={"trips-taken":0, "home":person_3_home})]
-    locations = [Variable("location_1", "location", loc_1_str, attributes={"supply":400, "demand":0}), Variable("location_2", "location", loc_2_str, attributes={"supply":0, "demand":200}), Variable("location_3", "location", loc_3_str, attributes={"supply":0, "demand":200})]
+    person_1_home = "289 Hamilton Street, San Francisco, CA 94134"
+    person_2_home = "289 Hamilton Street, San Francisco, CA 94134"
+    person_3_home = "Palo Alto, CA"
+    person_4_home = "Brisbane, CA"
+    person_5_home = "Brisbane, CA"
     
-    cars = [Variable("car_1", "car", "Alices car", attributes={"capacity":50})]
+    people = [Variable("person_a", "person", "Greg & David", attributes={"trips-taken":0, "home":person_1_home}),
+             Variable("person_b", "person", "Kenny & Maria", attributes={"trips-taken":0, "home":person_2_home}), 
+             Variable("person_c", "person", "Rona & David", attributes={"trips-taken":0, "home":person_3_home}),
+             Variable("person_d", "person", "Leesa", attributes={"trips-taken":0, "home":person_4_home}),
+             Variable("person_e", "person", "Cassandra", attributes={"trips-taken":0, "home":person_5_home})
+             ]
+    
+    locations = [Variable("location_1", "location", source_loc_1, attributes={"supply":700, "demand":0}),
+     Variable("location_2", "location", source_loc_2, attributes={"supply":1150, "demand":0}), 
+     Variable("location_3", "location", dest_loc_1, attributes={"supply":0, "demand":800}),
+     Variable("location_4", "location", dest_loc_2, attributes={"supply":0, "demand":1050}),
+     Variable("location_5", "location", person_1_home, attributes={"supply":0, "demand":0}),
+     Variable("location_6", "location", person_2_home, attributes={"supply":0, "demand":0}),
+     Variable("location_7", "location", person_3_home, attributes={"supply":0, "demand":0}),
+     Variable("location_8", "location", person_4_home, attributes={"supply":0, "demand":0}),
+     Variable("location_9", "location", person_5_home, attributes={"supply":0, "demand":0})]
+    
+    cars = [Variable("car_1", "car", "Greg & David car'", attributes={"capacity":200}),
+            Variable("car_2", "car", "Kenny & Maria car", attributes={"capacity":200}),
+            Variable("car_3", "car", "Rona & David car", attributes={"capacity":350}),
+            Variable("car_4", "car", "Leesa car", attributes={"capacity":200}),
+            Variable("car_5", "car", "Cassandra car", attributes={"capacity":200})]
 
-    people_locations = [AtomicSentence("at", [locations[0], people[0]]), AtomicSentence("at", [locations[1], people[1]])]
-    car_locations = [AtomicSentence("at", [locations[0], cars[0]])]
+    people_locations = [AtomicSentence("at", [locations[4], people[0]]), 
+                        AtomicSentence("at", [locations[5], people[1]]),
+                        AtomicSentence("at", [locations[6], people[2]]),
+                        AtomicSentence("at", [locations[7], people[3]]),
+                        AtomicSentence("at", [locations[8], people[4]])]
+    
+    car_locations = [AtomicSentence("at", [locations[4], cars[0]]),
+                    AtomicSentence("at", [locations[5], cars[1]]),
+                    AtomicSentence("at", [locations[6], cars[2]]),
+                    AtomicSentence("at", [locations[7], cars[3]]),
+                    AtomicSentence("at", [locations[8], cars[4]])]
 
     #------------------
 
@@ -584,17 +609,47 @@ def get_test_domain():
     init_state.metrics[people[2].bound_val] = {}
     init_state.metrics[people[2].bound_val]["trips-taken"] = 0
 
+    init_state.metrics[people[3].bound_val] = {}
+    init_state.metrics[people[3].bound_val]["trips-taken"] = 0
+
+    init_state.metrics[people[4].bound_val] = {}
+    init_state.metrics[people[4].bound_val]["trips-taken"] = 0
+
     init_state.metrics[locations[0].bound_val] = {}
-    init_state.metrics[locations[0].bound_val]["supply"] = 200
+    init_state.metrics[locations[0].bound_val]["supply"] = 1000
     init_state.metrics[locations[0].bound_val]["demand"] = 0
 
     init_state.metrics[locations[1].bound_val] = {}
-    init_state.metrics[locations[1].bound_val]["supply"] = 0
-    init_state.metrics[locations[1].bound_val]["demand"] = 100
+    init_state.metrics[locations[1].bound_val]["supply"] = 600
+    init_state.metrics[locations[1].bound_val]["demand"] = 0
 
     init_state.metrics[locations[2].bound_val] = {}
     init_state.metrics[locations[2].bound_val]["supply"] = 0
-    init_state.metrics[locations[2].bound_val]["demand"] = 100
+    init_state.metrics[locations[2].bound_val]["demand"] = 800
+
+    init_state.metrics[locations[3].bound_val] = {}
+    init_state.metrics[locations[3].bound_val]["supply"] = 0
+    init_state.metrics[locations[3].bound_val]["demand"] = 800
+
+    init_state.metrics[locations[4].bound_val] = {}
+    init_state.metrics[locations[4].bound_val]["supply"] = 0
+    init_state.metrics[locations[4].bound_val]["demand"] = 0
+    
+    init_state.metrics[locations[5].bound_val] = {}
+    init_state.metrics[locations[5].bound_val]["supply"] = 0
+    init_state.metrics[locations[5].bound_val]["demand"] = 0
+
+    init_state.metrics[locations[6].bound_val] = {}
+    init_state.metrics[locations[6].bound_val]["supply"] = 0
+    init_state.metrics[locations[6].bound_val]["demand"] = 0
+
+    init_state.metrics[locations[7].bound_val] = {}
+    init_state.metrics[locations[7].bound_val]["supply"] = 0
+    init_state.metrics[locations[7].bound_val]["demand"] = 0
+
+    init_state.metrics[locations[8].bound_val] = {}
+    init_state.metrics[locations[8].bound_val]["supply"] = 0
+    init_state.metrics[locations[8].bound_val]["demand"] = 0
 
     init_state.metrics[cars[0].bound_val] = {}
     init_state.metrics[cars[0].bound_val]["capacity"] = 50
