@@ -147,6 +147,7 @@ class ProblemParser:
         self.goal = None
     
     def get_problem_objects(self):
+        
         objects = []
         
         #The World
@@ -200,13 +201,14 @@ class ProblemParser:
         
         locations = []
 
-        location_strings = self.problem_dict["locations"]
+        location_strings = [] 
+        location_strings.extend([l["location"] for l in self.problem_dict["locations"]])
         location_strings.extend( [p["home"] for p in self.problem_dict["persons"]] )
         
         loc_index = 0
         for loc_str in location_strings:
             loc_var = Variable("location_%s" % loc_index, "location", loc_str, attributes={"supply":0, "demand":0}) 
-            locations.append(locations)
+            locations.append(loc_var)
             loc_index+=1
         #---------------
 
@@ -234,85 +236,99 @@ class ProblemParser:
         return objects
     
     def get_init_state(self):
-        
-        #Initial state
-        #------------------
-        people_locations = [AtomicSentence("at", [locations[4], people[0]]), 
-                            AtomicSentence("at", [locations[5], people[1]]),
-                            AtomicSentence("at", [locations[6], people[2]]),
-                            AtomicSentence("at", [locations[7], people[3]]),
-                            AtomicSentence("at", [locations[8], people[4]])]
-        
-        car_locations = [AtomicSentence("at", [locations[4], cars[0]]),
-                        AtomicSentence("at", [locations[5], cars[1]]),
-                        AtomicSentence("at", [locations[6], cars[2]]),
-                        AtomicSentence("at", [locations[7], cars[3]]),
-                        AtomicSentence("at", [locations[8], cars[4]])]
 
-        #------------------
+        #People locations
+        #-------------------
+        people_locations = []
+        people_data = self.problem_dict["persons"]
+        for person in people_data:
+            person_var = Variable("person-x", "PERSON", person["name"], attributes={"trips-taken":0, "home":person["home"]})
+            home_location_var = Variable("location-x", "LOCATION", person["home"])
+            new_person_loc = AtomicSentence("at", [home_location_var, person_var])
+            people_locations.append(new_person_loc)
+        #-------------------
+
+        #Car locations
+        #--------------
+        car_locations = []
+        car_data = self.problem_dict["cars"]
+        car_index = 0
+        for c in car_data:
+            car_var = Variable("car_%s" % car_index, "car", c["name"], attributes={"capacity":c["capacity"], "owner":c["owner"]})
+            
+            #Find Car's owner's home location
+            #--------------------------------
+            target_atom_sent = None
+            for p_l in people_locations:
+                people_matching_owner = [t for t in p_l.terms if t.bound_val==c["owner"]]
+                if len(people_matching_owner)>0:
+                    target_atom_sent = p_l
+                    break
+            
+            car_loc_var = None
+            if target_atom_sent is not None:
+                car_loc_var = [t for t in target_atom_sent.terms if t.type=="LOCATION"][0]
+            #--------------------------------
+
+            #Assert new AtomicSentence
+            new_car_loc_as = AtomicSentence("at", [car_loc_var, car_var])
+
+            car_locations.append(new_car_loc_as)
+
+            car_index+=1
+        #--------------
 
         initial_state_val = people_locations
         initial_state_val.extend(car_locations)
-        #initial_state_val.append(the_world)
 
         init_state = State(initial_state_val)
+
+        #Initial metric values
+
+        #------------------
         
-        init_state.metrics[the_world.bound_val] = {}
-        init_state.metrics[the_world.bound_val]["number-trips"] = 0
+        #The world - number-trips
+        init_state.metrics["The World"] = {}
+        init_state.metrics["The World"]["number-trips"] = 0
 
-        init_state.metrics[people[0].bound_val] = {}
-        init_state.metrics[people[0].bound_val]["trips-taken"] = 0
-
-        init_state.metrics[people[1].bound_val] = {}
-        init_state.metrics[people[1].bound_val]["trips-taken"] = 0
-
-        init_state.metrics[people[2].bound_val] = {}
-        init_state.metrics[people[2].bound_val]["trips-taken"] = 0
-
-        init_state.metrics[people[3].bound_val] = {}
-        init_state.metrics[people[3].bound_val]["trips-taken"] = 0
-
-        init_state.metrics[people[4].bound_val] = {}
-        init_state.metrics[people[4].bound_val]["trips-taken"] = 0
-
-        init_state.metrics[locations[0].bound_val] = {}
-        init_state.metrics[locations[0].bound_val]["supply"] = 1000
-        init_state.metrics[locations[0].bound_val]["demand"] = 0
-
-        init_state.metrics[locations[1].bound_val] = {}
-        init_state.metrics[locations[1].bound_val]["supply"] = 600
-        init_state.metrics[locations[1].bound_val]["demand"] = 0
-
-        init_state.metrics[locations[2].bound_val] = {}
-        init_state.metrics[locations[2].bound_val]["supply"] = 0
-        init_state.metrics[locations[2].bound_val]["demand"] = 800
-
-        init_state.metrics[locations[3].bound_val] = {}
-        init_state.metrics[locations[3].bound_val]["supply"] = 0
-        init_state.metrics[locations[3].bound_val]["demand"] = 800
-
-        init_state.metrics[locations[4].bound_val] = {}
-        init_state.metrics[locations[4].bound_val]["supply"] = 0
-        init_state.metrics[locations[4].bound_val]["demand"] = 0
+        #People - trips-taken
+        for p in people_data:
+            init_state.metrics[p["name"]] = {}
+            init_state.metrics[p["name"]]["trips-taken"] = 0
         
-        init_state.metrics[locations[5].bound_val] = {}
-        init_state.metrics[locations[5].bound_val]["supply"] = 0
-        init_state.metrics[locations[5].bound_val]["demand"] = 0
+        #Locations - supply and demand
+        #-----------------------------
+        for loc in self.problem_dict["locations"]:
+            loc_supply = 0
+            loc_demand = 0
+            if "supply" in loc:
+                loc_supply = loc["supply"]
+            
+            if "demand" in loc:
+                loc_demand = loc["demand"]
+            
+            init_state.metrics[loc["location"]] = {}
+            init_state.metrics[loc["location"]]["supply"] = loc_supply 
+            init_state.metrics[loc["location"]]["demand"] = loc_demand
 
-        init_state.metrics[locations[6].bound_val] = {}
-        init_state.metrics[locations[6].bound_val]["supply"] = 0
-        init_state.metrics[locations[6].bound_val]["demand"] = 0
+        #Also initialize locations appearing in peoples' home locations
+        home_loc_strings = []
+        home_loc_strings.extend( [p["home"] for p in self.problem_dict["persons"]])
 
-        init_state.metrics[locations[7].bound_val] = {}
-        init_state.metrics[locations[7].bound_val]["supply"] = 0
-        init_state.metrics[locations[7].bound_val]["demand"] = 0
+        for loc_string in home_loc_strings:
+            init_state.metrics[loc_string] = {}
+            init_state.metrics[loc_string]["supply"] = 0
+            init_state.metrics[loc_string]["demand"] = 0
+        #-----------------------------
 
-        init_state.metrics[locations[8].bound_val] = {}
-        init_state.metrics[locations[8].bound_val]["supply"] = 0
-        init_state.metrics[locations[8].bound_val]["demand"] = 0
 
-        init_state.metrics[cars[0].bound_val] = {}
-        init_state.metrics[cars[0].bound_val]["capacity"] = 50
+        for c in self.problem_dict["cars"]:
+            car_capacity = 50
+            if "capacity" in c:
+                car_capacity = c["capacity"]
+            
+            init_state.metrics[c["name"]] = {}
+            init_state.metrics[c["name"]]["capacity"] = car_capacity
 
         return init_state
     
