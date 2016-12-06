@@ -140,6 +140,8 @@ class Action():
             #Set value for 'impact', which may be a function
             #of bound terms, and so now may need to be re-evaluated.
             
+            impact_is_partial = (type(m_e["impact"]) == functools.partial)
+
             if impact_is_partial:
                 partial_func = m_e["impact"]
                 m_e["impact"] = partial_func(self.terms)            
@@ -694,7 +696,7 @@ def get_test_domain():
     init_state.metrics[locations[8].bound_val]["demand"] = 0
 
     init_state.metrics[cars[0].bound_val] = {}
-    init_state.metrics[cars[0].bound_val]["capacity"] = 50
+    init_state.metrics[cars[0].bound_val]["capacity"] = 150
 
     actions = [drive_action, load_action, unload_action, assign_action]    
     
