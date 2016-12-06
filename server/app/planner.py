@@ -5,6 +5,7 @@ from Queue import PriorityQueue
 import math
 import random
 import logging
+import functools
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 
@@ -116,7 +117,12 @@ class Action():
         #List of AtomicSentence instances
         self.preconditions = preconditions
         
-        #Dictionary of two lists, keyed as "add" and "delete", each of AtomicSentence instances
+        #Dictionary of three lists, keyed as "add", "delete", and "metrics". First two are of AtomicSentence instances
+        #Last is list of dictionaries, of the following format:
+        #
+        #   "object":<Variable instance>
+        #   "attribute":<string value>
+        #   "impact":<float>
         self.effects = effects
     
     def bind(self, **term_bindings):
@@ -128,6 +134,18 @@ class Action():
                 bound_term = term_bindings[term_name]
                 t.bound_val = bound_term.bound_val
                 t.attributes = bound_term.attributes
+        
+        #Change metric effect values
+        for m_e in self.effects["metrics"]:
+            #Set value for 'impact', which may be a function
+            #of bound terms, and so now may need to be re-evaluated.
+            
+            if impact_is_partial:
+                partial_func = m_e["impact"]
+                m_e["impact"] = partial_func(self.terms)            
+            # else - this value is already a number and no action need be taken.
+
+        
     
     def __str__(self):
         return_str = "Action: %(name)s (" % {"name":self.name}
@@ -433,6 +451,46 @@ def effect_function(**args):
     """ Specified on a per domain basis """
     pass
 
+def unload_partial(obj_attribute, world_objects):
+    """ 
+        Given Variable instance and object attribute, 
+        find the one which is a CAR object,
+        and compute UNLOAD action impact value 
+    """
+
+    car_objects = [w_o for w_o in world_objects if w_o.type=="CAR"]
+    world_obj = None
+    if len(car_objects)>0:
+        world_obj = car_objects[0]
+    
+    action_impact = 0
+
+    if world_obj is not None:
+        action_impact = -1*world_obj.attributes[obj_attribute]
+    
+    return action_impact
+    
+
+def load_partial(obj_attribute, world_objects):
+    """
+        Given Variable instance and object attribute,
+        find the one which is a CAR object,
+        and compute LOAD action impact value
+    """
+    
+    car_objects = [w_o for w_o in world_objects if w_o.type=="CAR"]
+    
+    world_obj = None
+    if len(car_objects)>0:
+        world_obj = car_objects[0]
+    
+    action_impact = 0
+
+    if world_obj is not None:
+        action_impact = -1*world_obj.attributes[obj_attribute]
+    
+    return action_impact
+
 def get_test_domain():
     #Drive
     #----------------------------------------
@@ -466,29 +524,14 @@ def get_test_domain():
                     }
     load_effects = {"add":[AtomicSentence("carrying-load", [car_a])], "delete":[], 
                         "metrics":[
-                            {"object":loc_a, "attribute":"supply", "impact":-1*car_a.attributes["capacity"]}
+                            {"object":loc_a, "attribute":"supply", "impact":functools.partial(load_partial, "capacity")}
                             ] 
                     }
     load_action = Action("Load", args_load, load_precons, load_effects)
-    #bound_load = get_bound_actions(load_action, world_objects)
     #----------------------------------------
 
     #Unload
     #----------------------------------------
-    # (:action unload
-    # :parameters (?car ?location)
-    # :precondition (and
-    #             (> (demand ?location) 0)
-    #             (carrying-load ?car)
-    #             (location ?location)
-    #             (car ?car)
-    #             (at ?car ?location)
-    #         )
-    # :effect (and
-    #         (decrease (demand ?location) (car-capacity ?car))		
-    #         (not (carrying-load ?car))
-    #     )
-	# )
     
     world = Variable("world", "domain", attributes={"number-trips":0})
     
@@ -500,11 +543,10 @@ def get_test_domain():
                 "metrics":[ {"object":loc_a, "attribute":"demand", "operation":"gt", "value":0} ]
                 }
     unload_effects = {"add":[], "delete":[AtomicSentence("carrying-load", [car_a])], 
-                "metrics":[{"object":loc_a, "attribute":"demand", "impact":-1*car_a.attributes["capacity"]}
+                "metrics":[{"object":loc_a, "attribute":"demand", "impact":functools.partial(unload_partial, "capacity")}
     ]}
 
     unload_action = Action("Unload", args_unload, unload_precons, unload_effects)
-    #bound_unload = get_bound_actions(unload_action, world_objects)
     #----------------------------------------
     
     world = Variable("world", "domain", attributes={"number-trips":0})
