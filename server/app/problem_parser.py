@@ -118,7 +118,10 @@ class ProblemParser:
         return objects
     
     def get_init_state(self):
-
+        """ 
+            Assumes that car initial locations are same as owner.
+        """
+        
         #People locations
         #-------------------
         people_locations = []
