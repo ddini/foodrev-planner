@@ -6,130 +6,6 @@ from planner import State
 from planner import Action
 from planner import Variable
 
-# class AtomicSentence():
-    
-#     def __init__(self, name, terms):
-#         self.name = name
-#         self.terms = terms
-    
-#     def __str__(self):
-#         return_str = "%(name)s (" % {"name":self.name}
-        
-#         return_str+=", ".join([str(t) for t in self.terms])
-                
-#         return_str+=")"
-#         return return_str
-    
-#     def __eq__(self, other):
-#         return_val = True
-        
-#         #names are equal
-#         if self.name != other.name:
-#             return False
-
-#         #same number of terms
-#         if len(self.terms) != len(other.terms):
-#             return False
-
-#         #For each term, there exists a term in other s.t. they are equal
-#         for t in self.terms:
-#             if not t in other.terms:
-#                 return_val = False
-#                 break
-
-#         return return_val 
-
-#     def bind(self, **bindings):
-#         pass
-
-# class State():
-
-#     def __init__(self, value):
-#         self.value = value
-#         self.prev_state = None
-#         self.prev_action = None
-#         self.metrics = {}
-    
-#     def enumerate_plan(self):
-
-#         acc_list = []
-
-#         curr_node = self
-#         while curr_node.prev_state is not None:
-#             acc_list.append(curr_node.prev_action)
-#             curr_node = curr_node.prev_state
-
-#         return acc_list
-    
-#     def h(self):
-#         outstanding_demand = 0
-
-#         for k in self.metrics:
-#             if "demand" in self.metrics[k]:
-#                 outstanding_demand+=self.metrics[k]["demand"]
-        
-#         outstanding_supply = 0
-
-#         for k in self.metrics:
-#             if "supply" in self.metrics[k]:
-#                 outstanding_supply+=self.metrics[k]["supply"]
-        
-#         total_num_trips = self.metrics["The World"]["number-trips"]
-#         return (outstanding_supply*outstanding_supply + outstanding_demand*outstanding_demand +total_num_trips*total_num_trips)
-    
-#     def __str__(self):
-#         return "state: %s h:%s" % (str(self.value), str(self.h()))
-
-# class Variable():
-#     def __init__(self, name, var_type=None, value=None, attributes=None):
-#         self.name = name
-#         self.type = var_type.upper()
-#         self.bound_val = value
-#         self.attributes = attributes
-    
-#     def __str__(self):
-#         return_str = "%(name)s : %(var_type)s - %(b_val)s" % {"name":self.name, "var_type":self.type.upper(), "b_val":self.bound_val}
-        
-#         return return_str
-    
-#     def __eq__(self, other):
-#         return (self.type == other.type) and (self.bound_val == other.bound_val)
-
-# class Action():
-
-#     def __init__(self, name, terms, preconditions, effects):
-#         """ 'terms' is a list of (unbound) variables """
-        
-#         self.name = name
-#         self.terms = terms
-
-#         #List of AtomicSentence instances
-#         self.preconditions = preconditions
-        
-#         #Dictionary of two lists, keyed as "add" and "delete", each of AtomicSentence instances
-#         self.effects = effects
-    
-#     def bind(self, **term_bindings):
-
-#         #Bind terms in term list
-#         for t in self.terms:
-#             term_name = t.name
-#             if term_name in term_bindings:
-#                 bound_term = term_bindings[term_name]
-#                 t.bound_val = bound_term.bound_val
-#                 t.attributes = bound_term.attributes
-    
-#     def __str__(self):
-#         return_str = "Action: %(name)s (" % {"name":self.name}
-#         # for t in self.terms:
-#         #     return_str+="%(term_name)s:%(term_type)s:%(term_val)s " % {"term_name":t.name, "term_type":t.type.upper(), "term_val":t.bound_val}
-        
-#         return_str+=", ".join([str(t) for t in self.terms])
-#         return_str+=")"
-    
-        
-#         return return_str
-
 def unload_partial(obj_attribute, world_objects):
     """ 
         Given Variable instance and object attribute, 
@@ -199,14 +75,6 @@ class ProblemParser:
         
         #The World
         the_world = Variable("world", "domain", "The World", attributes={"number-trips":0})
-        
-        #People
-        # people = [Variable("person_a", "person", "Greg & David", attributes={"trips-taken":0, "home":person_1_home}),
-        #     Variable("person_b", "person", "Kenny & Maria", attributes={"trips-taken":0, "home":person_2_home}), 
-        #     Variable("person_c", "person", "Rona & David", attributes={"trips-taken":0, "home":person_3_home}),
-        #     Variable("person_d", "person", "Leesa", attributes={"trips-taken":0, "home":person_4_home}),
-        #     Variable("person_e", "person", "Cassandra", attributes={"trips-taken":0, "home":person_5_home})
-        #     ]
 
         #People
         #---------------------------
@@ -221,31 +89,6 @@ class ProblemParser:
             person_index+=1
         #---------------------------
         
-        #Locations
-        #---------------
-        # source_loc_1 = "1919 22nd Street, San Francisco, CA 94107"
-        # source_loc_2 = "mission st and cesar chavez st., San Francisco, CA 94110"
-
-        # dest_loc_1 = "65 9th Street, San Francisco, CA"
-        # dest_loc_2 = "668 Clay St, San Francisco, CA"
-
-        # person_1_home = "289 Hamilton Street, San Francisco, CA 94134"
-        # person_2_home = "289 Hamilton Street, San Francisco, CA 94134"
-        # person_3_home = "Palo Alto, CA"
-        # person_4_home = "Brisbane, CA"
-        # person_5_home = "Brisbane, CA"
-
-
-        # locations = [Variable("location_1", "location", source_loc_1, attributes={"supply":700, "demand":0}),
-        #     Variable("location_2", "location", source_loc_2, attributes={"supply":1150, "demand":0}), 
-        #     Variable("location_3", "location", dest_loc_1, attributes={"supply":0, "demand":800}),
-        #     Variable("location_4", "location", dest_loc_2, attributes={"supply":0, "demand":1050}),
-        #     Variable("location_5", "location", person_1_home, attributes={"supply":0, "demand":0}),
-        #     Variable("location_6", "location", person_2_home, attributes={"supply":0, "demand":0}),
-        #     Variable("location_7", "location", person_3_home, attributes={"supply":0, "demand":0}),
-        #     Variable("location_8", "location", person_4_home, attributes={"supply":0, "demand":0}),
-        #     Variable("location_9", "location", person_5_home, attributes={"supply":0, "demand":0})]
-        
         locations = []
 
         location_strings = [] 
@@ -258,14 +101,6 @@ class ProblemParser:
             locations.append(loc_var)
             loc_index+=1
         #---------------
-
-
-        #Cars
-        # cars = [Variable("car_1", "car", "Greg & David car'", attributes={"capacity":200}),
-        #         Variable("car_2", "car", "Kenny & Maria car", attributes={"capacity":200}),
-        #         Variable("car_3", "car", "Rona & David car", attributes={"capacity":350}),
-        #         Variable("car_4", "car", "Leesa car", attributes={"capacity":200}),
-        #         Variable("car_5", "car", "Cassandra car", attributes={"capacity":200})]
 
         cars = []
 
