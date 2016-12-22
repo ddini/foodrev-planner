@@ -1,127 +1,174 @@
 
-class AtomicSentence():
+import functools
+
+from planner import AtomicSentence
+from planner import State
+from planner import Action
+from planner import Variable
+
+# class AtomicSentence():
     
-    def __init__(self, name, terms):
-        self.name = name
-        self.terms = terms
+#     def __init__(self, name, terms):
+#         self.name = name
+#         self.terms = terms
     
-    def __str__(self):
-        return_str = "%(name)s (" % {"name":self.name}
+#     def __str__(self):
+#         return_str = "%(name)s (" % {"name":self.name}
         
-        return_str+=", ".join([str(t) for t in self.terms])
+#         return_str+=", ".join([str(t) for t in self.terms])
                 
-        return_str+=")"
-        return return_str
+#         return_str+=")"
+#         return return_str
     
-    def __eq__(self, other):
-        return_val = True
+#     def __eq__(self, other):
+#         return_val = True
         
-        #names are equal
-        if self.name != other.name:
-            return False
+#         #names are equal
+#         if self.name != other.name:
+#             return False
 
-        #same number of terms
-        if len(self.terms) != len(other.terms):
-            return False
+#         #same number of terms
+#         if len(self.terms) != len(other.terms):
+#             return False
 
-        #For each term, there exists a term in other s.t. they are equal
-        for t in self.terms:
-            if not t in other.terms:
-                return_val = False
-                break
+#         #For each term, there exists a term in other s.t. they are equal
+#         for t in self.terms:
+#             if not t in other.terms:
+#                 return_val = False
+#                 break
 
-        return return_val 
+#         return return_val 
 
-    def bind(self, **bindings):
-        pass
+#     def bind(self, **bindings):
+#         pass
 
-class State():
+# class State():
 
-    def __init__(self, value):
-        self.value = value
-        self.prev_state = None
-        self.prev_action = None
-        self.metrics = {}
+#     def __init__(self, value):
+#         self.value = value
+#         self.prev_state = None
+#         self.prev_action = None
+#         self.metrics = {}
     
-    def enumerate_plan(self):
+#     def enumerate_plan(self):
 
-        acc_list = []
+#         acc_list = []
 
-        curr_node = self
-        while curr_node.prev_state is not None:
-            acc_list.append(curr_node.prev_action)
-            curr_node = curr_node.prev_state
+#         curr_node = self
+#         while curr_node.prev_state is not None:
+#             acc_list.append(curr_node.prev_action)
+#             curr_node = curr_node.prev_state
 
-        return acc_list
+#         return acc_list
     
-    def h(self):
-        outstanding_demand = 0
+#     def h(self):
+#         outstanding_demand = 0
 
-        for k in self.metrics:
-            if "demand" in self.metrics[k]:
-                outstanding_demand+=self.metrics[k]["demand"]
+#         for k in self.metrics:
+#             if "demand" in self.metrics[k]:
+#                 outstanding_demand+=self.metrics[k]["demand"]
         
-        outstanding_supply = 0
+#         outstanding_supply = 0
 
-        for k in self.metrics:
-            if "supply" in self.metrics[k]:
-                outstanding_supply+=self.metrics[k]["supply"]
+#         for k in self.metrics:
+#             if "supply" in self.metrics[k]:
+#                 outstanding_supply+=self.metrics[k]["supply"]
         
-        total_num_trips = self.metrics["The World"]["number-trips"]
-        return (outstanding_supply*outstanding_supply + outstanding_demand*outstanding_demand +total_num_trips*total_num_trips)
+#         total_num_trips = self.metrics["The World"]["number-trips"]
+#         return (outstanding_supply*outstanding_supply + outstanding_demand*outstanding_demand +total_num_trips*total_num_trips)
     
-    def __str__(self):
-        return "state: %s h:%s" % (str(self.value), str(self.h()))
+#     def __str__(self):
+#         return "state: %s h:%s" % (str(self.value), str(self.h()))
 
-class Variable():
-    def __init__(self, name, var_type=None, value=None, attributes=None):
-        self.name = name
-        self.type = var_type.upper()
-        self.bound_val = value
-        self.attributes = attributes
+# class Variable():
+#     def __init__(self, name, var_type=None, value=None, attributes=None):
+#         self.name = name
+#         self.type = var_type.upper()
+#         self.bound_val = value
+#         self.attributes = attributes
     
-    def __str__(self):
-        return_str = "%(name)s : %(var_type)s - %(b_val)s" % {"name":self.name, "var_type":self.type.upper(), "b_val":self.bound_val}
+#     def __str__(self):
+#         return_str = "%(name)s : %(var_type)s - %(b_val)s" % {"name":self.name, "var_type":self.type.upper(), "b_val":self.bound_val}
         
-        return return_str
+#         return return_str
     
-    def __eq__(self, other):
-        return (self.type == other.type) and (self.bound_val == other.bound_val)
+#     def __eq__(self, other):
+#         return (self.type == other.type) and (self.bound_val == other.bound_val)
 
-class Action():
+# class Action():
 
-    def __init__(self, name, terms, preconditions, effects):
-        """ 'terms' is a list of (unbound) variables """
+#     def __init__(self, name, terms, preconditions, effects):
+#         """ 'terms' is a list of (unbound) variables """
         
-        self.name = name
-        self.terms = terms
+#         self.name = name
+#         self.terms = terms
 
-        #List of AtomicSentence instances
-        self.preconditions = preconditions
+#         #List of AtomicSentence instances
+#         self.preconditions = preconditions
         
-        #Dictionary of two lists, keyed as "add" and "delete", each of AtomicSentence instances
-        self.effects = effects
+#         #Dictionary of two lists, keyed as "add" and "delete", each of AtomicSentence instances
+#         self.effects = effects
     
-    def bind(self, **term_bindings):
+#     def bind(self, **term_bindings):
 
-        #Bind terms in term list
-        for t in self.terms:
-            term_name = t.name
-            if term_name in term_bindings:
-                bound_term = term_bindings[term_name]
-                t.bound_val = bound_term.bound_val
-                t.attributes = bound_term.attributes
+#         #Bind terms in term list
+#         for t in self.terms:
+#             term_name = t.name
+#             if term_name in term_bindings:
+#                 bound_term = term_bindings[term_name]
+#                 t.bound_val = bound_term.bound_val
+#                 t.attributes = bound_term.attributes
     
-    def __str__(self):
-        return_str = "Action: %(name)s (" % {"name":self.name}
-        # for t in self.terms:
-        #     return_str+="%(term_name)s:%(term_type)s:%(term_val)s " % {"term_name":t.name, "term_type":t.type.upper(), "term_val":t.bound_val}
+#     def __str__(self):
+#         return_str = "Action: %(name)s (" % {"name":self.name}
+#         # for t in self.terms:
+#         #     return_str+="%(term_name)s:%(term_type)s:%(term_val)s " % {"term_name":t.name, "term_type":t.type.upper(), "term_val":t.bound_val}
         
-        return_str+=", ".join([str(t) for t in self.terms])
-        return_str+=")"
+#         return_str+=", ".join([str(t) for t in self.terms])
+#         return_str+=")"
     
         
-        return return_str
+#         return return_str
+
+def unload_partial(obj_attribute, world_objects):
+    """ 
+        Given Variable instance and object attribute, 
+        find the one which is a CAR object,
+        and compute UNLOAD action impact value 
+    """
+
+    car_objects = [w_o for w_o in world_objects if w_o.type=="CAR"]
+    world_obj = None
+    if len(car_objects)>0:
+        world_obj = car_objects[0]
+    
+    action_impact = 0
+
+    if world_obj is not None:
+        action_impact = -1*world_obj.attributes[obj_attribute]
+    
+    return action_impact
+    
+
+def load_partial(obj_attribute, world_objects):
+    """
+        Given Variable instance and object attribute,
+        find the one which is a CAR object,
+        and compute LOAD action impact value
+    """
+    
+    car_objects = [w_o for w_o in world_objects if w_o.type=="CAR"]
+    
+    world_obj = None
+    if len(car_objects)>0:
+        world_obj = car_objects[0]
+    
+    action_impact = 0
+
+    if world_obj is not None:
+        action_impact = -1*world_obj.attributes[obj_attribute]
+    
+    return action_impact
 
 class ProblemParser:
     """
@@ -368,7 +415,7 @@ class ProblemParser:
                         }
         load_effects = {"add":[AtomicSentence("carrying-load", [car_a])], "delete":[], 
                             "metrics":[
-                                {"object":loc_a, "attribute":"supply", "impact":-1*car_a.attributes["capacity"]}
+                                {"object":loc_a, "attribute":"supply", "impact":functools.partial(load_partial, "capacity")}
                                 ] 
                         }
         load_action = Action("Load", args_load, load_precons, load_effects)
@@ -387,7 +434,7 @@ class ProblemParser:
                     "metrics":[ {"object":loc_a, "attribute":"demand", "operation":"gt", "value":0} ]
                     }
         unload_effects = {"add":[], "delete":[AtomicSentence("carrying-load", [car_a])], 
-                    "metrics":[{"object":loc_a, "attribute":"demand", "impact":-1*car_a.attributes["capacity"]}
+                    "metrics":[{"object":loc_a, "attribute":"demand", "impact":functools.partial(unload_partial, "capacity")}
         ]}
 
         unload_action = Action("Unload", args_unload, unload_precons, unload_effects)
